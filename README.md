@@ -14,6 +14,11 @@ NoLaE uses [mididings](http://das.nasophon.de/mididings/) to interface between
 LC and your MIDI devices. Mididings is a powerful MIDI router and processor
 based on Python.
 
+Note: at this moment, NoLaE supports only the LaunchControl XL, not the
+"standard" one, since I don't own it. If you have it, feel free to contact me
+and I might be able to add support for it in the future: the protocol is the
+same, so it's enough to know how the controls and leds are mapped.
+
 ## Features
 - Create up to 16 templates (accessible through the Templates button on LC);
 - Configure custom output ports and redirect the output for each controller;
@@ -194,3 +199,4 @@ NoLaE will probably crash while saving
 - The patch syntax checking system is not very reliable, you could type any
 "valid" python expression
 - LED default values in the editor window don't always match the actual ones
+- Assigning 2 controllers to the same LED will overwrite its value.
