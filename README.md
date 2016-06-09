@@ -193,6 +193,7 @@ set (if you configured any).
 ##Known issues
 NoLaE is still in development, so it **has** bugs. Please, carefully test your
 configuration before using it in live performances!
+- JACK support not available yet
 - Default values in the editor window do not always set
 - If an output port is removed in the editor and a controller was set to it,
 NoLaE will probably crash while saving
