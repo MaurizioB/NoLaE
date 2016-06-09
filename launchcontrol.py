@@ -1150,18 +1150,19 @@ class Win(QtGui.QMainWindow):
 #        set_led(0, *led_list)
         set_led(0, *[(i, 0) for i in range(48)])
         mapping_raw = ''
-        try:
-            with open(self.map_file, 'r') as cf:
-                for line in cf.readlines():
-                    mapping_raw += line
-        except:
-            self.map_file = default_map
+        if self.map_file != False:
             try:
                 with open(self.map_file, 'r') as cf:
                     for line in cf.readlines():
                         mapping_raw += line
             except:
-                print 'Default mapping not found!'
+                self.map_file = default_map
+                try:
+                    with open(self.map_file, 'r') as cf:
+                        for line in cf.readlines():
+                            mapping_raw += line
+                except:
+                    print 'Default mapping not found!'
         mapping_raw = mapping_raw.replace('CTRL', 'md.CTRL')
         mapping_raw = mapping_raw.replace('NOTE', 'md.NOTE')
         try:
@@ -1316,7 +1317,8 @@ class Win(QtGui.QMainWindow):
                 return
             start = 0
             start_set = False
-            for i, (widget, label, led) in enumerate(self.widget_order):
+            for i, widget in enumerate(self.widget_order):
+                label = widget.siblingLabel
                 if widget not in [w.inst for w in self.map_dict[self.template].values()]:
                     label.setText('')
                     widget.map_action.setText('Map')
@@ -1380,7 +1382,7 @@ class Win(QtGui.QMainWindow):
                         self.automap_chkbtn.setChecked(False)
                 else:
                     widget_list = [w.inst for w in self.map_dict[self.template].values()]
-                    while self.widget_order[self.automap_current].inst in widget_list:
+                    while self.widget_order[self.automap_current] in widget_list:
                         self.automap_current += 1
                         if self.automap_current == len(self.widget_order):
                             if self.automap_cont_chk.isChecked and self.template <= 15:
@@ -1393,7 +1395,7 @@ class Win(QtGui.QMainWindow):
                                 self.automap_chkbtn.setChecked(False)
                             break
                     if self.automap_current < len(self.widget_order):
-                        self.widget_order[self.automap_current].inst.setFocus()
+                        self.widget_order[self.automap_current].setFocus()
     #                self.led_flash(0x33, True)
         elif self.singlemap_enabled and not self.map_confirm.isVisible():
             self.map_dialog.done(True)
