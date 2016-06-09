@@ -72,6 +72,10 @@ controller/button you want to reset and select "Remap". Alternatively, you can
 clear the mapping by choosing "Clear". If you press again "Start/Stop" the
 mapping will begin from the next not mapped controller.
 
+If the controller has inverted values or a limited range (because it has been
+configured so using the Novation editor), you may change it using the set range
+menu item for that controller.
+
 It is possible to change the current template by selecting it from the NoLaE
 buttons in the upper right corner, or using the normal template switching
 function on the LC.
@@ -201,3 +205,6 @@ NoLaE will probably crash while saving
 "valid" python expression
 - LED default values in the editor window don't always match the actual ones
 - Assigning 2 controllers to the same LED will overwrite its value.
+- In playing mode the groups are not shown for the first template on startup
+- Toggle buttons are not recognized, and will behave as you were keeping the
+button pressed.
