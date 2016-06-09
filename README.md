@@ -27,8 +27,9 @@ same, so it's enough to know how the controls and leds are mapped.
 
 ## Requirements
 - Python 2.7
+- PyQt4 at least version 4.11.1
 - [mididings](http://das.nasophon.de/mididings/)
-- Jack Audio Connection Kit (optional, but recommended)
+- Jack Audio Connection Kit (optional [not supported yet])
 
 ## Usage
 NoLaE needs two files to work, a mapping file (*.nlm) and a config one (*.nlc).
@@ -197,7 +198,9 @@ set (if you configured any).
 ##Known issues
 NoLaE is still in development, so it **has** bugs. Please, carefully test your
 configuration before using it in live performances!
-- JACK support not available yet
+- JACK support not available yet!
+- A graphical fixed layout has been used, so it might look ugly when using a
+non standard Qt theme.
 - Default values in the editor window do not always set
 - If an output port is removed in the editor and a controller was set to it,
 NoLaE will probably crash while saving
