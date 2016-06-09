@@ -968,6 +968,7 @@ class Win(QtGui.QMainWindow):
         self.template_connect(mode)
 
         self.operation_start()
+        self.setFixedSize(self.width(), self.height())
 
     def startupbox_resizeEvent(self, event):
         QtGui.QWidget.resizeEvent(self.startup_box, event)
@@ -1055,6 +1056,7 @@ class Win(QtGui.QMainWindow):
 
     def mapping_start(self):
         self.map_group.setVisible(True)
+        self.template_lbl.setVisible(False)
         self.template_manual_update(True)
 #        if not self.mapping:
 #            return
