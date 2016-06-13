@@ -1,5 +1,5 @@
 # NoLaE (Novation LaunchControl Editor)
-A Linux filter/mapper for Novation LaunchControl
+A Linux filter/mapper for Novation LaunchControl XL controllers
 
 
 NoLaE is a tool that acts as a filter for Novation LaunchControl XL controllers.
@@ -198,16 +198,17 @@ set (if you configured any).
 ##Known issues
 NoLaE is still in development, so it **has** bugs. Please, carefully test your
 configuration before using it in live performances!
-- JACK support not available yet!
+- JACK support is not very stable yet: it doesn't quit correctly and might
+crash JACK upon restart! Be very careful!
 - A graphical fixed layout has been used, so it might look ugly when using a
 non standard Qt theme.
 - Default values in the editor window do not always set
 - If an output port is removed in the editor and a controller was set to it,
-NoLaE will probably crash while saving
+NoLaE will probably crash while opening Live mode (should be fixed, now)
 - The patch syntax checking system is not very reliable, you could type any
-"valid" python expression
-- LED default values in the editor window don't always match the actual ones
-- Assigning 2 controllers to the same LED will overwrite its value.
-- In playing mode the groups are not shown for the first template on startup
+"valid" python expression, even if it does not make sense as a patch
+- LED default colors in the editor window don't always match the actual ones
+- When 2 controllers are assigned to the same LED, the latest used controller
+will overwrite the previous value.
 - Toggle buttons are not recognized, and will behave as you were keeping the
 button pressed.

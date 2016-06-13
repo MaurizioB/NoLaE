@@ -104,6 +104,14 @@ class TemplateClass(object):
     def get_widget(self, id):
         return self.main.widget_order[id]
 
+    def __repr__(self):
+        if isinstance(self.name, int):
+            if self.id >= 8:
+                return 'Factory {}'.format(self.id-7)
+            else:
+                return 'User {}'.format(self.id+1)
+        return self.name
+
 
 class Router(QtCore.QThread):
     template_change = QtCore.pyqtSignal(int)
@@ -152,12 +160,14 @@ class Router(QtCore.QThread):
         self.already_set = True
 
     def run(self):
+        print 'mididings thread started'
         if not self.already_set:
             self.setup()
         if self.mapping:
             md.run(md.Call(self.event_mapping))
         else:
             md.run(scenes=self.scenes, control=md.Call(self.event_call))
+        print 'mididing thread ended (?)'
 
     def event_mapping(self, event):
         if event.type == md.SYSEX:
@@ -177,7 +187,11 @@ class Router(QtCore.QThread):
             self.midi_signal.emit(copy(event))
 
     def quit(self):
-        md.engine.quit()
+        if md.engine.active():
+            md.engine.quit()
+            while md.engine.active():
+                pass
+        print 'mididings engine is now: {}'.format('active' if md.engine.active() else 'not active')
         QtCore.QThread.quit(self)
 
 class MyToolTip(QtGui.QWidget):

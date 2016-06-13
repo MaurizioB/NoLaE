@@ -5,6 +5,7 @@ import sys, argparse
 import mididings as md
 from collections import OrderedDict, namedtuple
 from copy import copy
+from os.path import basename as path_basename
 from PyQt4 import QtCore, QtGui, uic
 import icons
 
@@ -12,24 +13,35 @@ from const import *
 from utils import *
 from classes import *
 
+version = 0.5
+prog_name = 'NoLaE'
+description = 'A Novation LaunchControl mapper and filter'
 backend = 'alsa'
 default_map = 'default.nlm'
 Widget = namedtuple('Widget', 'inst ext mode')
 
 def process_args():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(version=str(version), description=description)
 
-    parser.add_argument('-c', '--config')
+    mode_group = parser.add_argument_group('Mode', 'Define in which mode start {} (Live mode will run if none specified)'.format(prog_name))
+    mode_exc = mode_group.add_mutually_exclusive_group()
+    mode_exc.add_argument('-M', '--mapping', help='Start in mapping mode', action='store_const', dest='mode', const='mapping')
+    mode_exc.add_argument('-E', '--editor', help='Start in editor mode', action='store_const', dest='mode', const='editor')
 
-    mapfile_group = parser.add_mutually_exclusive_group()
-    mapfile_group.add_argument('-m', '--mapfile', dest='mapfile')
-    mapfile_group.add_argument('-n', '--nomap', action='store_false', dest='mapfile')
+    backend_group = parser.add_argument_group('Backend', 'Select the preferred MIDI backend')
+    backend_exc = backend_group.add_mutually_exclusive_group()
+    backend_exc.add_argument('-a', '--alsa', help='Use ALSA (default)', action='store_const', dest='backend', const='alsa')
+    backend_exc.add_argument('-j', '--jack', help='Use JACK', action='store_const', dest='backend', const='jack')
+    backend_exc.add_argument('-J', '--jack-rt', help='Use JACK in realtime mode (not recommended)', action='store_const', dest='backend', const='jackrt')
 
-    mode_group = parser.add_mutually_exclusive_group()
-    mode_group.add_argument('-M', '--mapping', action='store_const', dest='mode', const='mapping')
-    mode_group.add_argument('-E', '--editor', action='store_const', dest='mode', const='editor')
+    file_group = parser.add_argument_group('File management')
+    mapfile_group = file_group.add_mutually_exclusive_group()
+    mapfile_group.add_argument('-m', '--mapfile', help='Specify the mapping file', dest='mapfile', metavar='mapping.nlm')
+    mapfile_group.add_argument('-n', '--nomap', help='Do not use a mapping file', action='store_false', dest='mapfile')
 
-    parser.set_defaults(mapfile=default_map, mode='control')
+    file_group.add_argument('-c', '--config', help='Specify the configuration file to use', metavar='config.nlc')
+
+    parser.set_defaults(mapfile=default_map, mode='control', backend='alsa')
     return parser.parse_args()
 
 
@@ -38,7 +50,7 @@ class Win(QtGui.QMainWindow):
     widgetChanged = QtCore.pyqtSignal(object)
     outputChanged = QtCore.pyqtSignal()
 
-    def __init__(self, parent=None, mode='control', map_file=None, config=None):
+    def __init__(self, parent=None, mode='control', map_file=None, config=None, backend='alsa'):
         QtGui.QMainWindow.__init__(self, parent)
         uic.loadUi('launchcontrol.ui', self)
         self.mapping = True if mode=='mapping' else False
@@ -52,13 +64,14 @@ class Win(QtGui.QMainWindow):
         if mode != 'editor':
             self.map_file = map_file
             if self.mapping:
-                self.setWindowTitle('{} - mapping mode'.format(self.windowTitle()))
+                self.setWindowTitle('{} - Mapping'.format(prog_name))
                 self.router.midi_signal.connect(self.midi_map)
                 self.showmap_btn.clicked.connect(self.show_map)
                 self.operation_start = self.mapping_start
                 self.router.start() 
                 self.router.template_change.connect(self.template_remote_set)
             else:
+                self.setWindowTitle('{} - Live'.format(prog_name))
                 self.scenes, out_ports = self.routing_setup()
                 self.router.set_config(self.scenes, out_ports=out_ports)
                 self.router.midi_signal.connect(self.midi_action)
@@ -70,6 +83,7 @@ class Win(QtGui.QMainWindow):
             self.startup()
 #            self.template_connect(mode)
         else:
+            self.setWindowTitle('{} - Editor {}'.format(prog_name, '({})'.format(self.config) if self.config else ''))
             self.operation_start = self.editor_start
         self.template_connect(mode)
 
@@ -837,6 +851,7 @@ class Win(QtGui.QMainWindow):
                 for dest, patch in scene_dict.items():
                     temp_patch_dict[dest] = patch
                 template_scene = [temp_patch_dict[dest] >> md.Port(dest) for dest in temp_patch_dict.keys()]
+            #TODO: implement name inside TemplateClass
             template_id = self.template_dict[template].name
             scenes[template+1] = md.Scene('{} template {}'.format(*template_str(template)) if isinstance(template_id, int) else 'Template {}'.format(template_id), template_scene)
 #        print scenes
@@ -875,6 +890,8 @@ class Win(QtGui.QMainWindow):
             return
         [groupbox.hide() for groupbox in self.template_groups[self.template]]
         self.template_manual_update(value)
+        template = self.template_dict[self.template]
+        self.setWindowTitle('{} - {}'.format(prog_name, template))
         [groupbox.show() for groupbox in self.template_groups[self.template]]
 
     def template_send_request(self):
@@ -974,7 +991,7 @@ class Win(QtGui.QMainWindow):
 
     def routing_start(self):
         self.map_group.setVisible(False)
-        self.template_manual_update(True)
+        self.template_manual_update_with_groups(True)
         if not self.template_dict[0].enabled:
             #TODO: NO! devi proseguire!
             return
@@ -1632,6 +1649,7 @@ class Win(QtGui.QMainWindow):
         save_file = QtGui.QFileDialog.getSaveFileName(self, 'Save config to file', self.config if self.config else '', 'LaunchPad config (*.nlc)')
         if not save_file:
             return
+        save_file = str(save_file)
         map_dict = OrderedDict()
 
         output_list = []
@@ -1710,21 +1728,21 @@ class Win(QtGui.QMainWindow):
             else:
                 dict_str += '\'{}\': {},\n'.format(main_k, main_v)
         dict_str += '}'
-        print dict_str
-#        return
         with open(save_file, 'w') as fo:
-#            for line in dict_str.split():
-                fo.write(dict_str)
+            fo.write(dict_str)
+        self.setWindowTitle('{} - Editor {}'.format(prog_name, path_basename(save_file)))
+        self.config = save_file
 
     def closeEvent(self, event):
         if md.engine.active():
             self.router.quit()
+            self.router.wait()
 
 
 def main():
     app = QtGui.QApplication(sys.argv)
     args = process_args()
-    win = Win(mode=args.mode, map_file=args.mapfile, config=args.config)
+    win = Win(mode=args.mode, map_file=args.mapfile, config=args.config, backend=args.backend)
     win.show()
 
     sys.exit(app.exec_())

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>lc_win</class>
- <widget class="QMainWindow" name="lc_win">
+ <class>nolae_win</class>
+ <widget class="QMainWindow" name="nolae_win">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>LaunchControl</string>
+   <string>NoLaE</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QPushButton" name="btn_00">
