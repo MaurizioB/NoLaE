@@ -59,16 +59,20 @@ class Win(QtGui.QMainWindow):
             self.map_dict[t] = {}
         self.config = config
         self.template = 0
-        self.router = Router(self, mapping=self.mapping, backend=backend)
         self.widget_setup()
         if mode != 'editor':
+            self.router_thread = QtCore.QThread()
+            self.router = Router(self, mapping=self.mapping, backend=backend)
+            self.router.moveToThread(self.router_thread)
+            self.router.mididings_exit.connect(self.router_thread.quit)
+            self.router_thread.started.connect(self.router.mididings_run)
             self.map_file = map_file
             if self.mapping:
                 self.setWindowTitle('{} - Mapping'.format(prog_name))
                 self.router.midi_signal.connect(self.midi_map)
                 self.showmap_btn.clicked.connect(self.show_map)
                 self.operation_start = self.mapping_start
-                self.router.start() 
+#                self.router.start() 
                 self.router.template_change.connect(self.template_remote_set)
             else:
                 self.setWindowTitle('{} - Live'.format(prog_name))
@@ -76,13 +80,16 @@ class Win(QtGui.QMainWindow):
                 self.router.set_config(self.scenes, out_ports=out_ports)
                 self.router.midi_signal.connect(self.midi_action)
                 self.operation_start = self.routing_start
-                self.router.start() 
+#                self.router.start() 
                 self.router.template_change.connect(self.template_remote_set_with_groups)
+            self.router_thread.start()
             while not md.engine.active():
                 pass
             self.startup()
 #            self.template_connect(mode)
         else:
+            self.router_thread = None
+            self.router = None
             self.setWindowTitle('{} - Editor {}'.format(prog_name, '({})'.format(self.config) if self.config else ''))
             self.operation_start = self.editor_start
         self.template_connect(mode)
@@ -1734,9 +1741,14 @@ class Win(QtGui.QMainWindow):
         self.config = save_file
 
     def closeEvent(self, event):
-        if md.engine.active():
-            self.router.quit()
-            self.router.wait()
+        if self.router:
+            if md.engine.active():
+                self.router.quit()
+            self.router.deleteLater()
+            self.router_thread.quit()
+            self.router_thread.wait()
+#        self.deleteLater()
+        QtGui.QMainWindow.closeEvent(self, event)
 
 
 def main():

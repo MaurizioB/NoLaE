@@ -10,9 +10,9 @@ It can work with (possibly) any existing mapping already set on the LC, and,
 much more important, it allows you to set custom midi actions for every
 controller.
 
-NoLaE uses [mididings](http://das.nasophon.de/mididings/) to interface between
-LC and your MIDI devices. Mididings is a powerful MIDI router and processor
-based on Python.
+NoLaE uses [mididings](http://das.nasophon.de/mididings/) as an interface
+between LC and your MIDI devices. Mididings is a powerful MIDI router and
+processor based on Python.
 
 Note: at this moment, NoLaE supports only the LaunchControl XL, not the
 "standard" one, since I don't own it. If you have it, feel free to contact me
@@ -198,8 +198,11 @@ set (if you configured any).
 ##Known issues
 NoLaE is still in development, so it **has** bugs. Please, carefully test your
 configuration before using it in live performances!
-- JACK support is not very stable yet: it doesn't quit correctly and might
-crash JACK upon restart! Be very careful!
+- Threading is not perfect yet, this means that sometimes the mididings engine
+doesn't shut down correctly. While using ALSA this shouldn't be a major problem,
+it might be if you use JACK. Check your patchbay for the NoLaE client, if it's
+still there you should try to kill its process before running it again,
+otherwise JACK could even crash.
 - A graphical fixed layout has been used, so it might look ugly when using a
 non standard Qt theme.
 - Default values in the editor window do not always set

@@ -113,9 +113,10 @@ class TemplateClass(object):
         return self.name
 
 
-class Router(QtCore.QThread):
+class Router(QtCore.QObject):
     template_change = QtCore.pyqtSignal(int)
     midi_signal = QtCore.pyqtSignal(object)
+    mididings_exit = QtCore.pyqtSignal()
 
     def __init__(self, main, mapping=False, backend='alsa'):
         QtCore.QThread.__init__(self)
@@ -131,7 +132,7 @@ class Router(QtCore.QThread):
     def setup_mapping(self):
         self.config = md.config(
             backend = self.backend,
-            client_name='LCGate',
+            client_name='NoLaE',
             in_ports = [
                 ('LC_input', 'Launch.*'), 
                         ],
@@ -151,7 +152,7 @@ class Router(QtCore.QThread):
     def setup_control(self):
         self.config = md.config(
             backend = self.backend,
-            client_name='LCGate',
+            client_name='NoLaE',
             in_ports = [
                 ('LC_input', 'Launch.*'), 
                         ],
@@ -159,15 +160,14 @@ class Router(QtCore.QThread):
             )
         self.already_set = True
 
-    def run(self):
-        print 'mididings thread started'
+    def mididings_run(self):
         if not self.already_set:
             self.setup()
         if self.mapping:
             md.run(md.Call(self.event_mapping))
         else:
             md.run(scenes=self.scenes, control=md.Call(self.event_call))
-        print 'mididing thread ended (?)'
+        self.mididings_exit.emit()
 
     def event_mapping(self, event):
         if event.type == md.SYSEX:
@@ -189,10 +189,12 @@ class Router(QtCore.QThread):
     def quit(self):
         if md.engine.active():
             md.engine.quit()
-            while md.engine.active():
+            try:
+                while md.engine.active():
+                    pass
+            except:
                 pass
-        print 'mididings engine is now: {}'.format('active' if md.engine.active() else 'not active')
-        QtCore.QThread.quit(self)
+#        QtCore.QThread.quit(self)
 
 class MyToolTip(QtGui.QWidget):
     def __init__(self, parent, text):
