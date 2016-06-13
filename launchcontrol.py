@@ -3,113 +3,18 @@
 
 import sys, argparse
 import mididings as md
-import string
-from collections import namedtuple, OrderedDict
+from collections import OrderedDict, namedtuple
 from copy import copy
 from PyQt4 import QtCore, QtGui, uic
 import icons
 
+from const import *
+from utils import *
+from classes import *
+
 backend = 'alsa'
 default_map = 'default.nlm'
-led_scale = [48, 49, 50, 51, 35, 19, 2, 3]
-dev_scale = [0x00, 0x10, 0x11, 0x22, 0x23, 0x20, 0x33]
-dir_scale = [0x00, 0x01, 0x21, 0x22, 0x32, 0x33]
-led_fullscale = [x for t in [[a for r in range(16)] for a in led_scale] for x in t]
-row_heights = {0: 80, 1: 80, 2: 80, 3: 160, 4: 40, 5: 40}
-str_allowed = set(string.ascii_letters+string.digits+'.'+' ')
-
-#TODO Split is missing, update function with regex
-md_replace = ('Ctrl', 'Port', 'Channel', 'Velocity', 
-           'Note', 'Pitchbend', 'Aftertouch', 'Program', 'SysEx', 'Generator', 
-           'extra.Harmonize', 'LimitPolyphony', 'MakeMonophonic', 'LatchNotes', 'Panic'
-           'Discard', 'Pass', 'Sanitize', 'Print', 
-           'EVENT'
-           )
-
-patch_colors = (('darkred', 'red'), ('gray', 'black'))
-
-class Const(object):
-    def __init__(self):
-        self.name = None
-    def get_name(self):
-        return [k for k, v in globals().items() if v is self][0]
-    def __str__(self):
-        if not self.name:
-            self.name = self.get_name()
-        return self.name.title()
-    def __repr__(self):
-        if not self.name:
-            self.name = self.get_name()
-        return self.name
-
-Pass, Ignore, Value, Push, Toggle, Widget, Mode, Ext = (Const() for i in range(8))
-Disabled, Enabled, Triggered = (Const() for i in range(3))
-GroupMode, DestMode = (Const() for i in range(2))
-MAPCTRL = 0
 Widget = namedtuple('Widget', 'inst ext mode')
-TPatch = namedtuple('TPatch', 'label patch input')
-TPatch.__new__.__defaults__ = (None, ) * len(TPatch._fields)
-TPatch.__new__.__defaults__ = (None, )
-
-def str_check(text):
-    if isinstance(text, QtCore.QString):
-        text = str(text.toLatin1())
-    if set(text) <= str_allowed:
-        return text
-    new_text = ''
-    for l in text:
-        if l in str_allowed:
-            new_text += l
-    return new_text
-
-def set_led(template=0, *led_list):
-    sysex_string = [0xF0, 0x00, 0x20, 0x29, 0x02, 0x11, 0x78, template]
-    sysex_string.extend([x for t in led_list for x in t])
-    sysex_string.append(0xf7)
-    newevent = md.event.SysExEvent(md.engine.out_ports()[-1], sysex_string)
-    md.engine.output_event(newevent)
-
-def template_str(template):
-    if template >= 8:
-        return ('Factory', template-7)
-    else:
-        return ('User', template+1)
-
-def elide_str(label, text):
-    if not isinstance(text, str):
-        text = str(text)
-    metrics = QtGui.QFontMetrics(label.font())
-    elided = metrics.elidedText(text, QtCore.Qt.ElideRight, label.width())
-    return elided
-
-def setBold(item, bold=True):
-    font = item.font()
-    font.setBold(bold)
-    item.setFont(font)
-
-def rgb_from_hex(value, mode=None):
-    if not isinstance(value, int):
-        return value
-    if not mode:
-        green, red = divmod(value, 16)
-        return '#{:02x}{:02x}00'.format(red*85, green*85)
-    elif mode == 'dev':
-        try:
-            color = dev_scale.index(value)
-        except:
-            green, red = divmod(value, 16)
-            return '#{:02x}{:02x}00'.format(red*85, green*85)
-        red = color*42
-        green = color*38
-        return '#{:02x}{:02x}00'.format(red, green)
-    else:
-        try:
-            color = dir_scale.index(value)
-        except:
-            green, red = divmod(value, 16)
-            return '#{:02x}{:02x}00'.format(red*85, green*85)
-        red = color*51
-        return '#{:02x}0000'.format(red)
 
 def process_args():
     parser = argparse.ArgumentParser()
@@ -128,810 +33,9 @@ def process_args():
     return parser.parse_args()
 
 
-class SignalClass(object):
-    def __init__(self, template, widget, ext=True, mode=Value, dest=Pass, patch=md.Pass(), text=None, led=True, led_basevalue=Enabled, led_action=Pass):
-        self.widget = widget
-        self.inst = widget
-        self.template = template
-        self.id = widget.id
-        self.ext = ext if isinstance(ext, tuple) else (0, 127)
-        self.mode = mode
-        self.value = self.ext[0]
-        self.dest = dest
-        self.patch = patch
-        self.label = widget.siblingLabel
-        self.basetext = text if text else ''
-        self.text = self.basetext.format(self.value)
-        if led is not False:
-            if widget.siblingLed is not None:
-                self.led = widget.siblingLed
-            else:
-                self.led = None
-        else:
-            self.led = None
-        
-#        self.led_basevalue = led_basevalue
-        if self.led:
-            self.led_setup(led_basevalue)
-        else:
-            self.led_state = self.led_basevalue = 0
-        self.led_assign(led_action)
-
-    def __repr__(self):
-        return 'Signal({w}, {p}, {l})'.format(w=self.widget.readable, p=self.patch, l=self.led)
-
-    def led_setup(self, basevalue):
-        if basevalue == Enabled:
-            if self.id < 48:
-                basevalue = 0x30
-                triggervalue = 3
-            elif 48 <= self.id < 52:
-                basevalue = 0x10
-                triggervalue = 0x33
-            else:
-                basevalue = 0x01
-                triggervalue = 0x33
-            self.led_state = self.led_basevalue = basevalue
-            self.led_triggervalue = triggervalue
-        elif basevalue == Disabled:
-            self.led_state = self.led_basevalue = 0
-        else:
-            self.led_state = self.led_basevalue = basevalue
-            self.led_triggervalue = 0x33 if 48 <= self.id < 52 else 3
-
-    def led_pass_action(self, value):
-        set_led(self.template, (self.led, led_fullscale[value]))
-
-    def led_push_action(self, value):
-        set_led(self.template, (self.led, self.led_triggervalue if value==self.ext[1] else self.led_basevalue))
-
-    def led_ignore_action(self, event):
-        pass
-
-    def led_assign(self, action):
-        if not self.led:
-            self.led_action = self.led_ignore_action
-            return
-        if action == Pass:
-            if isinstance(self.widget, QtGui.QPushButton):
-                self.led_action = self.led_push_action
-            else:
-                self.led_action = self.led_pass_action
-        elif isinstance(action, int):
-            self.led_triggervalue = action
-            if isinstance(self.widget, QtGui.QPushButton):
-                self.led_action = self.led_push_action
-            else:
-                self.led_action = self.led_pass_action
-        else:
-            self.led_action = self.led_ignore_action
-
-    def trigger(self, value):
-#        self.action(event)
-        self.led_action(value)
-
-
-class TemplateClass(object):
-    def __init__(self, main, id, name=None):
-        self.main = main
-        self.id = id
-        self.name = name if name else id
-        self.out_ports = None
-        self.enabled = True
-        self.widget_list = []
-        self.current_widget = None
-
-    def set_widget_signal(self, signal):
-        self.widget_list[signal.id] = signal
-
-    def get_widget(self, id):
-        return self.main.widget_order[id]
-
-
-class Router(QtCore.QThread):
-    template_change = QtCore.pyqtSignal(int)
-    midi_signal = QtCore.pyqtSignal(object)
-
-    def __init__(self, main, mapping=False):
-        QtCore.QThread.__init__(self)
-        self.main = main
-        self.already_set = False
-        self.mapping = mapping
-        if self.mapping:
-            self.setup = self.setup_mapping
-        else:
-            self.setup = self.setup_control
-
-    def setup_mapping(self):
-        self.config = md.config(
-            backend = backend,
-            client_name='LCGate',
-            in_ports = [
-                ('LC_input', 'Launch.*'), 
-                        ],
-            out_ports=[
-                ('LC_output', 'Launch.*'), 
-                        ],
-            )
-        self.already_set = True
-
-    def set_config(self, scenes, out_ports=None):
-        self.scenes = scenes
-        if out_ports:
-            self.out_ports = out_ports
-        else:
-            self.out_ports = [('Output')]
-
-    def setup_control(self):
-        self.config = md.config(
-            backend = backend,
-            client_name='LCGate',
-            in_ports = [
-                ('LC_input', 'Launch.*'), 
-                        ],
-            out_ports = self.out_ports + [('LC_output', 'Launch.*')],
-            )
-        self.already_set = True
-
-    def run(self):
-        if not self.already_set:
-            self.setup()
-        if self.mapping:
-            md.run(md.Call(self.event_mapping))
-        else:
-            md.run(scenes=self.scenes, control=md.Call(self.event_call))
-
-    def event_mapping(self, event):
-        if event.type == md.SYSEX:
-            template = event.sysex[-2]
-            self.template_change.emit(template)
-            return
-        elif event.type in [md.CTRL, md.NOTEON, md.NOTEOFF]:
-            self.midi_signal.emit(copy(event))
-
-    def event_call(self, event):
-        if event.type == md.SYSEX:
-            template = event.sysex[-2]
-            md.engine.switch_scene(template+1)
-            self.template_change.emit(template)
-            return
-        elif event.type in [md.CTRL, md.NOTEON, md.NOTEOFF]:
-            self.midi_signal.emit(copy(event))
-
-    def quit(self):
-        md.engine.quit()
-        QtCore.QThread.quit(self)
-
-class MyToolTip(QtGui.QWidget):
-    def __init__(self, parent, text):
-        QtGui.QWidget.__init__(self, parent.parent())
-#        self.resize(50, 100)
-        self.label = QtGui.QLabel(text, self)
-        self.label.setMinimumWidth(60)
-        self.label.setMaximumWidth(60)
-        self.label.setMinimumHeight(40)
-        self.label.setWordWrap(True)
-#        self.label.setAlignment(QtCore.Qt.AlignCenter)
-        self.show()
-        center = parent.x()+parent.width()/2
-        self.setMinimumWidth(60)
-        self.move(center-self.width()/2, parent.y()-10)
-        self.setStyleSheet('background-color: rgba(210,210,210,210)')
-        self.raise_()
-
-
-class EditorWin(QtGui.QMainWindow):
-    #TODO: forse questo signal andrebbe al main, non qui
-    widgetChanged = QtCore.pyqtSignal(object)
-    labelChanged = QtCore.pyqtSignal(object, object)
-
-    def __init__(self, parent=None, mode='control'):
-        QtGui.QMainWindow.__init__(self, parent)
-        self.main = self.parent()
-        self.map_dict = self.main.map_dict
-        uic.loadUi('patch.ui', self)
-        self.patch_edit.textChanged.connect(self.patch_update)
-        self.patch = ''
-        self.patch_edit.valid = False
-        self.widgetChanged.connect(self.widget_change)
-        self.patch_edit.focusInEvent = self.patch_edit_focusIn
-        self.patch_edit.focusOutEvent = self.patch_edit_focusOut
-        self.enable_chk.toggled.connect(self.enable_set)
-        self.led_reset_btn.clicked.connect(self.led_reset)
-        self.main.outputChanged.connect(self.output_update)
-        self.dest_combo.currentIndexChanged.connect(self.dest_update)
-        self.led_combo.currentIndexChanged.connect(self.led_combo_update)
-        self.text_edit.textEdited.connect(self.text_update)
-        self.led_action_combo.lineEdit().textEdited.connect(self.led_action_update)
-        self.restore_btn.clicked.connect(self.widget_restore)
-
-        self.current_widget = None
-        self.output_update()
-        self.models_setup()
-        self.base_group.setEnabled(False)
-        self.patch_group.setEnabled(False)
-        self.patch_templates_menu_create()
-        self.patch_toolbtn.setMenu(self.patch_templates)
-        self.tool_group.setEnabled = self.tool_group_setEnabled
-        #TODO: add setDisable if not selected
-
-    def closeEvent(self, event):
-        if self.current_widget:
-            self.widget_save()
-
-    def patch_templates_menu_create(self):
-        action_dict = [(
-                       'Ctrl value split', (
-                            TPatch('2 value filter to 0, 127', 'CtrlValueSplit({(0,63): Ctrl(EVENT_DATA1, 0), (64,127): Ctrl(EVENT_DATA1, 127)})'), 
-                            TPatch('3 value filter to 0, 64, 127', 'CtrlValueSplit({(0,42): Ctrl(EVENT_DATA1, 0), (43,84): Ctrl(EVENT_DATA1, 64), (85,127): Ctrl(EVENT_DATA1, 127)})'), 
-                            TPatch('4 value filter to 0, 32, 64, 127', 'CtrlValueSplit({(0,31): Ctrl(EVENT_DATA1, 0), (32,63): Ctrl(EVENT_DATA1, 42), (64,95): Ctrl(EVENT_DATA1, 84), (96, 127): Ctrl(EVENT_DATA1, 127)})'), 
-                            TPatch('6 value filter to 0, 26, 51, 77, 102, 127', 'CtrlValueSplit({(0,21): Ctrl(EVENT_DATA1, 0), (22,42): Ctrl(EVENT_DATA1, 26), (43,63): Ctrl(EVENT_DATA1, 51), (64, 85): Ctrl(EVENT_DATA1, 77), (86, 106): Ctrl(EVENT_DATA1, 102), (107, 127): Ctrl(EVENT_DATA1, 127)})')
-                       )), (
-                       'Ctrl Remap', (
-                            TPatch('Remap to Ctrl...', 'Ctrl({}, EVENT_VALUE)', ((int, 127, 'Set Ctrl number to remap to'), )), 
-                       )), 
-#                       TPatch('Test',  'oirgour'), 
-                      ]
-        self.patch_templates = QtGui.QMenu()
-#        print action_dict.items()
-        for item in action_dict:
-            if isinstance(item, TPatch):
-                action = QtGui.QAction(item.label, self)
-                action.patch = item.patch
-                if item.input:
-                    action.input = item.input
-                else:
-                    action.input = None
-                action.triggered.connect(self.patch_template_set)
-                self.patch_templates.addAction(action)
-            else:
-                label, patch_list = item
-                submenu = self.patch_templates.addMenu(label)
-                for tpatch in patch_list:
-                    action = QtGui.QAction(tpatch.label, self)
-                    action.patch = tpatch.patch
-                    if tpatch.input:
-                        action.input = tpatch.input
-                    else:
-                        action.input = None
-                    action.triggered.connect(self.patch_template_set)
-                    submenu.addAction(action)
-
-    def patch_template_set(self):
-        action = self.sender()
-        patch = action.patch
-        if action.input:
-            for req in action.input:
-                if req[0] == int:
-                    value, res = QtGui.QInputDialog.getInt(self, action.text(), req[-1], min=0, max=req[1])
-                    if not res:
-                        return
-                    patch = patch.format(value)
-                
-        if self.patch_edit.toPlainText().toLatin1() == 'Pass()':
-            self.patch_edit.setPlainText(patch)
-            return
-        doc = self.patch_edit.document()
-        excursor = self.patch_edit.textCursor()
-        cursor = QtGui.QTextCursor(doc)
-        cursor.setPosition(excursor.position())
-        cursor.insertText(patch)
-
-    def widget_restore(self):
-        self.clear_fields(False)
-        self.labelChanged.emit(self.current_widget['widget'], True)
-
-    def clear_fields(self, disable=True):
-        self.dest_combo.setCurrentIndex(0)
-        self.text_edit.setText('')
-        if self.current_widget:
-            widget = self.current_widget['widget']
-            self.led_combo.setCurrentIndex(widget.siblingLed+1 if widget.siblingLed else 0)
-        else:
-            self.led_combo.setCurrentIndex(0)
-        self.led_base_combo.setCurrentIndex(0)
-        self.led_base_combo.setModelColumn(0)
-        self.led_action_combo.setCurrentIndex(-1)
-#        self.led_action_combo.setModelColumn(0)
-        self.patch_edit.setPlainText('')
-        if disable:
-            self.enable_chk.setChecked(False)
-
-    def output_update(self):
-        prev_index = self.dest_combo.currentIndex()
-        self.dest_combo.blockSignals(True)
-        self.output_model = QtGui.QStandardItemModel(self.dest_combo)
-        self.dest_combo.setModel(self.output_model)
-        for i in range(self.main.output_model.rowCount()):
-            item = self.main.output_model.item(i).clone()
-            item.setText('{}: {}{}'.format(i+1, item.text(), ' (default)' if i == 0 else ''))
-            font = item.font()
-            font.setBold(False)
-            item.setFont(font)
-            self.output_model.appendRow(item)
-        if self.current_widget and prev_index > 0:
-            if prev_index >= self.output_model.rowCount():
-                prev_index = self.output_model.rowCount()-1
-                self.dest_combo.blockSignals(False)
-            self.dest_combo.setCurrentIndex(prev_index)
-        self.dest_combo.blockSignals(False)
-
-    def models_setup(self):
-        def pixmap(red=0, green=0):
-            pixmap = QtGui.QPixmap(8, 8)
-            color = QtGui.QColor()
-            color.setRgb(red, green, 0)
-            pixmap.fill(color)
-            return pixmap
-        def create_table():
-            table = QtGui.QTableView(self)
-            table.setShowGrid(False)
-            table.verticalHeader().hide()
-            table.horizontalHeader().hide()
-            table.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-            table.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
-            return table
-
-        #Led list
-        self.ledlist_model = QtGui.QStandardItemModel(self.led_combo)
-        self.led_combo.setModel(self.ledlist_model)
-        item = QtGui.QStandardItem('Disabled')
-        item.led = None
-        item.ledSet = None
-        item.ledTrigger = None
-        self.ledlist_model.appendRow(item)
-        for widget in self.main.widget_order:
-            if widget.siblingLed == None:
-                continue
-            item = QtGui.QStandardItem(widget.readable)
-            item.led = widget.siblingLed
-            item.ledSet = widget.ledSet
-            item.ledTrigger = widget.ledTrigger
-            self.ledlist_model.appendRow(item)
-
-        #LED base color combo
-        self.colormap_full_pixmap = {(r, g):pixmap(r*85, g*85) for r in range(4) for g in range(4)}
-        self.colormap_full_model = QtGui.QStandardItemModel()
-        self.led_base_combo.setModel(self.colormap_full_model)
-        self.color_table = create_table()
-        self.color_table.selectionChanged = self.color_column_check
-        self.led_base_combo.setView(self.color_table)
-        for row in range(4):
-            row_list = []
-            for col in range(4):
-                item = QtGui.QStandardItem('0x{:02x}'.format(row+col*16))
-                item.setIcon(QtGui.QIcon(self.colormap_full_pixmap[row, col]))
-#                if row == 0 and col == 3:
-#                    font = item.font()
-#                    font.setBold(True)
-#                    item.setFont(font)
-                row_list.append(item)
-            self.colormap_full_model.appendRow(row_list)
-            self.color_table.resizeColumnToContents(row)
-        self.color_table.setMinimumWidth(sum([self.color_table.columnWidth(c) for c in range(self.colormap_full_model.columnCount())]))
-
-        self.colormap_dev_pixmap = [pixmap(r*42, r*38) for r in range(7)]
-        self.colormap_dev_model = QtGui.QStandardItemModel()
-        for l in range(7):
-            led_value = dev_scale[l]
-            item = QtGui.QStandardItem('0x{:02x}'.format(led_value))
-            item.setIcon(QtGui.QIcon(self.colormap_dev_pixmap[l]))
-            self.colormap_dev_model.appendRow(item)
-        self.led_base_combo.setSizeAdjustPolicy(self.led_base_combo.AdjustToContents)
-
-        self.colormap_dir_pixmap = [pixmap(r*51) for r in range(6)]
-        self.colormap_dir_model = QtGui.QStandardItemModel()
-        for l in range(6):
-            led_value = dir_scale[l]
-            item = QtGui.QStandardItem('0x{:02x}'.format(led_value))
-            item.setIcon(QtGui.QIcon(self.colormap_dir_pixmap[l]))
-            self.colormap_dir_model.appendRow(item)
-
-        #LED action combo
-        self.action_table = create_table()
-        self.action_table.selectionChanged = self.action_column_check
-        self.led_action_combo.setView(self.action_table)
-        self.action_full_model = QtGui.QStandardItemModel()
-        self.led_action_combo.setModel(self.action_full_model)
-        pass_item = QtGui.QStandardItem('Pass')
-        disc_item = QtGui.QStandardItem('Ignore')
-        self.action_full_model.appendRow([pass_item, disc_item])
-        self.action_table.setSpan(0, 1, 1, 3)
-        self.action_table.resizeRowToContents(0)
-        for row in range(4):
-            self.action_full_model.appendRow([self.colormap_full_model.item(row, col).clone() for col in range(4)])
-            self.action_table.resizeColumnToContents(row)
-        self.action_table.setMinimumWidth(sum([self.action_table.columnWidth(c) for c in range(self.action_full_model.columnCount())]))
-        self.action_dev_model = QtGui.QStandardItemModel()
-        self.action_dev_model.appendColumn([pass_item.clone(), disc_item.clone()])
-        [self.action_dev_model.appendRow(self.colormap_dev_model.item(l).clone()) for l in range(7)]
-        self.action_dir_model = QtGui.QStandardItemModel()
-        self.action_dir_model.appendColumn([pass_item.clone(), disc_item.clone()])
-        [self.action_dir_model.appendRow(self.colormap_dir_model.item(l).clone()) for l in range(6)]
-
-        #setting default leds:
-        setBold(self.colormap_full_model.item(0, 3))
-        setBold(self.colormap_dev_model.item(1))
-        setBold(self.colormap_dir_model.item(1))
-        setBold(self.action_full_model.item(4, 3))
-        setBold(self.action_dev_model.item(8))
-        setBold(self.action_dir_model.item(7))
-
-
-    def color_column_check(self, selected, previous):
-        index = self.color_table.selectedIndexes()[0]
-        self.led_base_combo.setModelColumn(index.column())
-        self.led_base_combo.setCurrentIndex(index.row())
-
-    def action_column_check(self, selected, previous):
-        index = self.action_table.selectedIndexes()
-        if index:
-            self.led_action_combo.setModelColumn(index[0].column())
-            self.led_action_combo.setCurrentIndex(index[0].row())
-        else:
-            print 'What\'s wrong with index? {}'.format(index)
-            self.led_action_combo.setModelColumn(0)
-            self.led_action_combo.setCurrentIndex(0)
-
-    def enable_set(self, value):
-        #TODO: if no patch and no dict value, just clear!
-        #maybe we don't need this anymore?
-        if not self.current_widget:
-            #we need to set these for startup and template change
-            if not value:
-                self.base_group.setEnabled(value)
-                self.patch_group.setEnabled(value)
-            return
-        self.base_group.setEnabled(value)
-        self.patch_group.setEnabled(value)
-        self.current_widget['enabled'] = value
-        self.tool_group.setEnabled(value)
-        self.patch_edit.setStyleSheet('color: {}'.format(patch_colors[self.patch_edit.valid][value]))
-        if value:
-            patch = self.current_widget.get('patch')
-            text = self.current_widget.get('text')
-            if not text:
-                text = patch if patch else None
-            self.labelChanged.emit(self.current_widget['widget'], text if text else True)
-        else:
-            self.labelChanged.emit(self.current_widget['widget'], False)
-
-    def tool_group_setEnabled(self, value):
-        for button in self.tool_group.buttons():
-            button.setEnabled(value)
-
-    def led_reset(self):
-        default_led = self.current_widget['widget'].siblingLed
-        self.led_combo.setCurrentIndex(default_led+1 if default_led is not None else 0)
-
-    def led_combo_update(self, led):
-        if not self.current_widget:
-            return
-        if led == 0:
-            self.led_base_combo.setEnabled(False)
-            self.led_action_combo.setEnabled(False)
-            if self.current_widget.get('led'):
-                if isinstance(self.current_widget['widget'], QtGui.QSlider):
-                    self.current_widget.pop('led')
-                else:
-                    self.current_widget['led'] = False
-            return
-        self.led_base_combo.setEnabled(True)
-        self.led_action_combo.setEnabled(True)
-        if led <= 40:
-            if self.led_base_combo.model() != self.colormap_full_model:
-                self.led_base_combo.setModel(self.colormap_full_model)
-                self.led_action_combo.setModel(self.action_full_model)
-        elif led <= 44:
-            if self.led_base_combo.model() != self.colormap_dev_model:
-                self.led_base_combo.setModelColumn(0)
-                self.led_base_combo.setModel(self.colormap_dev_model)
-                self.led_action_combo.setModelColumn(0)
-                self.led_action_combo.setModel(self.action_dev_model)
-        else:
-            if self.led_base_combo.model() != self.colormap_dir_model:
-                self.led_base_combo.setModelColumn(0)
-                self.led_base_combo.setModel(self.colormap_dir_model)
-                self.led_action_combo.setModelColumn(0)
-                self.led_action_combo.setModel(self.action_dir_model)
-        for col in range(self.led_base_combo.model().columnCount()):
-            self.color_table.resizeColumnToContents(col)
-            self.action_table.resizeColumnToContents(col)
-        if col == 0:
-            self.action_table.setRowHeight(1, self.action_table.rowHeight(0))
-        else:
-            self.action_table.setRowHeight(1, self.action_table.rowHeight(self.action_table.model().rowCount()-1))
-        self.color_table.setMinimumWidth(sum([self.color_table.columnWidth(c) for c in range(self.led_base_combo.model().columnCount())]))
-        self.action_table.setMinimumWidth(sum([self.action_table.columnWidth(c) for c in range(self.action_full_model.columnCount())]))
-        self.current_widget['led'] = led - 1
-
-    def dest_update(self, index):
-        if not self.current_widget:
-            return
-        self.current_widget['dest'] = self.dest_combo.currentIndex()+1
-
-    def text_update(self, text):
-        self.current_widget['text'] = str(self.text_edit.text().toLatin1())
-        self.labelChanged.emit(self.current_widget['widget'], self.text_edit.text())
-
-    def led_action_update(self, text):
-        cols = self.led_action_combo.model().columnCount()
-        if cols == 1:
-            found = self.led_action_combo.model().findItems('{}'.format(text),  column=0)
-            if len(found):
-                self.led_action_combo.setCurrentIndex(found[0].row())
-        else:
-            for c in range(cols):
-                found = self.led_action_combo.model().findItems('{}'.format(text),  column=c)
-                if len(found):
-                    self.led_action_combo.setModelColumn(c)
-                    self.led_action_combo.setCurrentIndex(found[0].row())
-                    break
-        if len(found):
-            return
-        if self.led_action_combo.currentIndex() >= 0:
-            lineEdit = self.led_action_combo.lineEdit()
-            pos = lineEdit.cursorPosition()
-            self.led_action_combo.setCurrentIndex(-1)
-            lineEdit.setText(text)
-            lineEdit.setCursorPosition(pos)
-
-    def patch_update(self):
-        if not self.current_widget:
-            return
-        patch = str(self.patch_edit.toPlainText().toLatin1())
-        self.current_widget['patch'] = patch
-        if len(patch):
-            patch_format = patch
-            for rep in md_replace:
-                patch_format = patch_format.replace(rep, 'md.'+rep)
-            try:
-                eval(patch_format)
-                self.patch_edit.valid = True
-            except:
-                self.patch_edit.valid = False
-        else:
-            self.patch_edit.valid = True
-        self.patch_edit.setStyleSheet('color: {}'.format(patch_colors[self.patch_edit.valid][self.enable_chk.isChecked()]))
-        if self.enable_chk.isChecked():
-            if self.text_edit.text():
-                self.labelChanged.emit(self.current_widget['widget'], self.text_edit.text())
-            else:
-                self.labelChanged.emit(self.current_widget['widget'], patch if len(patch) else True)
-
-    def widget_save(self, template=None):
-        if not self.current_widget:
-            return
-        if not template:
-            template = self.main.template
-        widget = self.current_widget.get('widget')
-        enabled = self.current_widget.get('enabled', True)
-        dest = self.current_widget.get('dest', 1)
-        text = self.current_widget.get('text', '')
-        patch = self.current_widget.get('patch')
-        if text is not None:
-            text = text.strip()
-            self.current_widget['text'] = text
-        else:
-            text = ''
-        if len(text):
-            pass
-        elif patch:
-            text = patch
-        else:
-            text = True
-#        widget.siblingLabel.setText(elide_str(widget.siblingLabel, text) if enabled else '')
-        self.labelChanged.emit(widget, text if enabled else False)
-        led_index = self.led_combo.currentIndex()
-        if led_index > 0:
-            led_item = self.ledlist_model.item(led_index)
-            if led_item.led == 0:
-                self.current_widget['led'] = False
-            elif led_item.led == widget.siblingLed:
-                self.current_widget['led'] = True
-            led_basevalue = int(str(self.led_base_combo.currentText()), 0)
-            if led_basevalue == 0:
-                self.current_widget['led_basevalue'] = Disabled
-            elif led_item.ledSet == led_basevalue:
-                self.current_widget['led_basevalue'] = Enabled
-            else:
-                self.current_widget['led_basevalue'] = led_basevalue
-            led_action = str(self.led_action_combo.currentText())
-            if led_action in ['Pass', 'Ignore']:
-                led_action = eval(led_action)
-            else:
-                try:
-                    led_action = int(led_action, 0)
-                except:
-                    pass
-            self.current_widget['led_action'] = led_action
-
-        tooltip = self.main.widget_tooltip(widget, self.current_widget)
-        widget.setToolTip(tooltip)
-        self.main.map_dict[template][widget] = self.current_widget
-
-    def widget_change(self, widget):
-        self.enable_chk.setEnabled(True)
-        self.tool_group.setEnabled(True)
-        #save previous widget
-        if self.current_widget:
-#            print self.current_widget
-            if self.current_widget['widget'] == widget:
-                return
-            self.widget_save()
-
-        if not self.isVisible():
-            return
-        #Prepare editor window
-        self.base_group.setTitle('Base configuration: {}'.format(widget.readable))
-        led_index = self.led_combo.currentIndex()
-        led_item = self.ledlist_model.item(led_index, 0)
-        setBold(led_item, False)
-        if widget.siblingLed is not None:
-            setBold(self.ledlist_model.item(widget.siblingLed+1))
-        else:
-            setBold(self.ledlist_model.item(0))
-        widget_dict = self.main.map_dict[self.main.template][widget]
-        if widget_dict == None:
-            self.current_widget = {'widget': widget, 'enabled': False}
-            self.enable_chk.setChecked(False)
-            self.dest_combo.setCurrentIndex(0)
-            self.patch_edit.setPlainText('')
-            siblingLed = widget.siblingLed
-            if siblingLed is not None:
-                self.led_combo.setCurrentIndex(siblingLed+1 if siblingLed is not None else 0)
-                if siblingLed < 40:
-                    self.led_base_combo.setModelColumn(3)
-                    self.led_base_combo.setCurrentIndex(0)
-                    self.led_action_combo.setModelColumn(0)
-                    self.led_action_combo.setCurrentIndex(0)
-                else:
-                    self.led_base_combo.setModelColumn(0)
-                    self.led_base_combo.setCurrentIndex(1)
-                    self.led_action_combo.setModelColumn(0)
-                    self.led_action_combo.setCurrentIndex(1)
-            #other values stuff to reset
-            return
-
-        widget_dict['widget'] = widget
-        enabled = widget_dict.get('enabled', True)
-        self.current_widget = widget_dict
-        self.enable_chk.setChecked(enabled)
-
-        #Destination port
-        dest = widget_dict.get('dest', 1)-1
-        self.dest_combo.blockSignals(True)
-        if dest == None:
-            self.dest_combo.setCurrentIndex(0)
-        else:
-            if dest >= self.output_model.rowCount():
-                dest = self.output_model.rowCount()-1
-            self.dest_combo.setCurrentIndex(dest)
-        self.dest_combo.blockSignals(False)
-
-        #Text
-        text = widget_dict.get('text', '')
-        self.text_edit.setText(text)
-
-        #Patch
-        patch = widget_dict.get('patch')
-        if patch:
-#            self.patch_edit.setStyleSheet('color: black')
-            self.patch_edit.setPlainText(str(patch))
-        elif enabled:
-            self.patch_edit.blockSignals(True)
-            self.patch_edit.setStyleSheet('color: gray')
-            self.patch_edit.setPlainText('Pass()')
-            self.patch_edit.valid = True
-            self.patch_edit.blockSignals(False)
-
-        #LED
-        led = widget_dict.get('led', True)
-        self.led_combo.blockSignals(True)
-        if led == None or (isinstance(led, bool) and led == False):
-            self.led_combo.setCurrentIndex(0)
-        #TODO: maybe we can use Enabled and Disabled?
-        elif isinstance(led, bool) and led == True:
-            self.led_combo.setCurrentIndex(widget.siblingLed+1 if widget.siblingLed is not None else 0)
-        else:
-            self.led_combo.setCurrentIndex(led+1)
-        self.led_combo.blockSignals(False)
-        #we block signals, just to be sure to emit one and one only
-#        self.led_combo.currentIndexChanged.emit(self.led_combo.currentIndex())
-        self.led_combo_update(self.led_combo.currentIndex())
-
-        led_basevalue = widget_dict.get('led_basevalue', Enabled)
-        cols = self.led_base_combo.model().columnCount()
-        if led_basevalue in [None, Disabled]:
-            self.led_base_combo.setModelColumn(0)
-            self.led_base_combo.setCurrentIndex(0)
-        else:
-            if led_basevalue == Enabled:
-                if cols == 1:
-                    self.led_base_combo.setModelColumn(0)
-                    self.led_base_combo.setCurrentIndex(1)
-                else:
-                    self.led_base_combo.setModelColumn(3)
-                    self.led_base_combo.setCurrentIndex(0)
-            else:
-                if cols == 1:
-#                    self.led_base_combo.setModelColumn(0)
-                    found = self.led_base_combo.model().findItems('0x{:02x}'.format(led_basevalue),  column=0)
-                    if len(found):
-                        self.led_base_combo.setCurrentIndex(found[0].row())
-                    else:
-                        self.led_base_combo.setCurrentIndex(1)
-                else:
-                    is_found = False
-                    for c in range(cols):
-                        found = self.led_base_combo.model().findItems('0x{:02x}'.format(led_basevalue),  column=c)
-                        if len(found):
-                            self.led_base_combo.setModelColumn(c)
-                            self.led_base_combo.setCurrentIndex(found[0].row())
-                            is_found = True
-                            break
-                    if not is_found:
-                        self.led_base_combo.setModelColumn(3)
-                        self.led_base_combo.setCurrentIndex(0)
-        led_action = widget_dict.get('led_action', Pass)
-        if led_action == Pass:
-            self.led_action_combo.setModelColumn(0)
-            self.led_action_combo.setCurrentIndex(0)
-        elif led_action == Ignore:
-            if cols == 1:
-#                self.led_action_combo.setModelColumn(0)
-                self.led_action_combo.setCurrentIndex(1)
-            else:
-                self.led_action_combo.setModelColumn(1)
-                self.led_action_combo.setCurrentIndex(0)
-        elif isinstance(led_action, int):
-            if cols == 1:
-                found = self.led_action_combo.model().findItems('{}'.format(hex(led_action)),  column=0)
-                if len(found):
-                    self.led_action_combo.setCurrentIndex(found[0].row())
-                else:
-                    self.led_action_combo.lineEdit().setText(led_action)
-            else:
-                is_found = False
-                for c in range(cols):
-                    found = self.led_action_combo.model().findItems('{}'.format(hex(led_action)),  column=c)
-                    if len(found):
-                        self.led_action_combo.setModelColumn(c)
-                        self.led_action_combo.setCurrentIndex(found[0].row())
-                        is_found = True
-                        break
-                if not is_found:
-                    self.led_action_combo.setModelColumn(0)
-                    self.led_action_combo.setCurrentIndex(-1)
-                    self.led_action_combo.lineEdit().setText(led_action)
-        else:
-            self.led_action_combo.lineEdit().setText(led_action)
-
-
-    def patch_edit_focusIn(self, event):
-        QtGui.QPlainTextEdit.focusInEvent(self.patch_edit, event)
-        patch = self.current_widget.get('patch')
-        if not patch:
-            self.patch_edit.setPlainText('')
-
-    def patch_edit_focusOut(self, event):
-        QtGui.QPlainTextEdit.focusOutEvent(self.patch_edit, event)
-        patch = self.current_widget.get('patch')
-        if not patch:
-            self.patch_edit.blockSignals(True)
-            self.patch_edit.setStyleSheet('color: gray')
-            self.patch_edit.setPlainText('Pass')
-            self.patch_edit.blockSignals(False)
-
-
-class OutputWidget(QtGui.QWidget):
-    def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
-        uic.loadUi('output_widget.ui', self)
-        self.main = self.parent()
-
 
 class Win(QtGui.QMainWindow):
+    widgetChanged = QtCore.pyqtSignal(object)
     outputChanged = QtCore.pyqtSignal()
 
     def __init__(self, parent=None, mode='control', map_file=None, config=None):
@@ -943,22 +47,24 @@ class Win(QtGui.QMainWindow):
             self.map_dict[t] = {}
         self.config = config
         self.template = 0
-        self.router = Router(self, self.mapping)
+        self.router = Router(self, mapping=self.mapping, backend=backend)
         self.widget_setup()
         if mode != 'editor':
+            self.map_file = map_file
             if self.mapping:
-                self.map_file = map_file
                 self.setWindowTitle('{} - mapping mode'.format(self.windowTitle()))
                 self.router.midi_signal.connect(self.midi_map)
                 self.showmap_btn.clicked.connect(self.show_map)
                 self.operation_start = self.mapping_start
+                self.router.start() 
+                self.router.template_change.connect(self.template_remote_set)
             else:
                 self.scenes, out_ports = self.routing_setup()
                 self.router.set_config(self.scenes, out_ports=out_ports)
                 self.router.midi_signal.connect(self.midi_action)
                 self.operation_start = self.routing_start
-            self.router.start()
-            self.router.template_change.connect(self.template_remote_set)
+                self.router.start() 
+                self.router.template_change.connect(self.template_remote_set_with_groups)
             while not md.engine.active():
                 pass
             self.startup()
@@ -1061,7 +167,7 @@ class Win(QtGui.QMainWindow):
 #        if not self.mapping:
 #            return
 
-        self.savemap_btn.clicked.connect(self.save_map)
+        self.savemap_btn.clicked.connect(self.map_save)
         self.automap_enabled = False
         self.singlemap_enabled = False
         self.map_dialog = QtGui.QMessageBox(self)
@@ -1554,7 +660,7 @@ class Win(QtGui.QMainWindow):
         for p in pairing:
             print p
 
-    def save_map(self):
+    def map_save(self):
         if not any([True if len(d) else False for d in self.map_dict.values()]):
             return
         savemap = QtGui.QFileDialog.getSaveFileName(self, 'Save mapping to file', self.map_file if self.map_file else '', 'LaunchPad mappings (*.nlm)')
@@ -1562,10 +668,17 @@ class Win(QtGui.QMainWindow):
             full_map = ['{']
             for template, mapping in self.map_dict.items():
                 if len(mapping):
-                    full_map.append('{}:{{'.format(template))
+                    full_map.append('{}: {{\n\n'.format(template))
+#                    for ctrl, widget in self.map_dict[template].items():
+#                        full_map.append('({},{},{}):\'{}\','.format(ctrl[0], 'CTRL' if ctrl[1] == md.CTRL else 'NOTE', ctrl[2], (widget.inst.objectName(), widget.ext, widget.mode)))
+#                    this method differs from the above since it _should_ write the values using the widget_order list
+                    temp_dict = {}
                     for ctrl, widget in self.map_dict[template].items():
-                        full_map.append('({},{},{}):\'{}\','.format(ctrl[0], 'CTRL' if ctrl[1] == md.CTRL else 'NOTE', ctrl[2], (widget.inst.objectName(), widget.ext, widget.mode)))
-                    full_map.append('},')
+                        temp_dict[widget.inst] = '\t({},{},{}): {},\n'.format(ctrl[0], 'CTRL' if ctrl[1] == md.CTRL else 'NOTE', ctrl[2], (str(widget.inst.objectName()), widget.ext, widget.mode))
+                    for widget in self.widget_order:
+                        if widget in temp_dict:
+                            full_map.append(temp_dict[widget])
+                    full_map.append('},\n\n')
             full_map.append('}\n')
             with open(savemap, 'w') as fo:
                 for line in full_map:
@@ -1772,9 +885,7 @@ class Win(QtGui.QMainWindow):
     def template_remote_set(self, template):
         if template == self.template:
             return
-        [groupbox.hide() for groupbox in self.template_groups[self.template]]
         self.template = template
-        [groupbox.show() for groupbox in self.template_groups[self.template]]
         if template >= 8:
             self.fact_tmp_radio.blockSignals(True)
             self.fact_tmp_radio.setChecked(True)
@@ -1789,6 +900,14 @@ class Win(QtGui.QMainWindow):
         template_btn.setChecked(True)
         template_btn.blockSignals(False)
         self.template_label_update()
+
+    def template_remote_set_with_groups(self, template):
+        if template == self.template:
+            return
+        [groupbox.hide() for groupbox in self.template_groups[self.template]]
+        self.template_remote_set(template)
+        #self.template has changed with the previous function call
+        [groupbox.show() for groupbox in self.template_groups[self.template]]
 
     def template_label_update(self):
         if self.mapping:
@@ -1899,6 +1018,7 @@ class Win(QtGui.QMainWindow):
 
 
     def editor_start(self):
+        from editorwin import EditorWin, OutputWidget
         self.map_group.setVisible(False)
         self.overlay_tooltip_list = []
         self.label_order = []
@@ -2336,11 +1456,11 @@ class Win(QtGui.QMainWindow):
                     return QtGui.QMainWindow.eventFilter(self, source, event)
 #                print 'set widget {}'.format(source.readable)
                 if isinstance(source, QtGui.QLabel):
-                    self.editor_win.widgetChanged.emit(source.siblingWidget)
+                    self.widgetChanged.emit(source.siblingWidget)
                     self.editor_win.text_edit.setFocus()
                     self.editor_win.text_edit.selectAll()
                 else:
-                    self.editor_win.widgetChanged.emit(source)
+                    self.widgetChanged.emit(source)
                 return True
             elif event.type() == QtCore.QEvent.MouseButtonDblClick:
                 self.editor_win.show()
@@ -2490,7 +1610,7 @@ class Win(QtGui.QMainWindow):
 
     def editor_widget_edit(self, *args):
         sender_widget = self.sender().parent()
-        self.editor_win.widgetChanged.emit(sender_widget)
+        self.widgetChanged.emit(sender_widget)
         self.editor_win.show()
 
     def editor_widget_clear(self, *args):
@@ -2559,6 +1679,8 @@ class Win(QtGui.QMainWindow):
                             if v == 1:
                                 widget_data.pop('dest')
                             else:
+                                if v > self.output_model.rowCount():
+                                    v = self.output_model.rowCount()
                                 widget_data['dest'] = v
                         elif k == 'led':
                             if v == True:
