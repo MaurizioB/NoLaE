@@ -748,9 +748,9 @@ class Win(QtGui.QMainWindow):
         config = {}
         self.template_groups = [[] for i in range(16)]
         self.template_dict = [TemplateClass(self, i+1) for i in range(16)]
+        out_ports = []
         try:
 #            out_ports = config_raw.get('output')
-            out_ports = []
             for t in config_raw.keys():
                 if t == 'output':
                     out_ports = config_raw[t]
@@ -781,6 +781,10 @@ class Win(QtGui.QMainWindow):
                 patch_data = config_dict[widget]
                 ext = (0, 127) if ext==True else (ext[0], ext[1])
                 dest = patch_data.get('dest', 1)
+                if not len(out_ports) and dest > 1:
+                    dest = 1
+                elif len(out_ports) and dest > len(out_ports):
+                    dest = len(out_ports)
                 patch = patch_data.get('patch')
                 if not patch:
                     patch = md.Pass()
