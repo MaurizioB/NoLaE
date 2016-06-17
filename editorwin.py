@@ -38,6 +38,12 @@ class EditorWin(QtGui.QMainWindow):
         self.text_edit.textEdited.connect(self.text_update)
         self.led_action_combo.lineEdit().textEdited.connect(self.led_action_update)
         self.restore_btn.clicked.connect(self.widget_restore)
+        self.tool_group.setEnabled = self.tool_group_setEnabled
+        self.toggle_chk.toggled.connect(self.toggle_set)
+        self.toggle_listview.wheelEvent = self.toggle_chk_wheelEvent
+        self.toggle_add_btn.clicked.connect(self.toggle_value_add)
+        self.toggle_remove_btn.clicked.connect(self.toggle_value_remove)
+        self.toggle_listview.closeEditor = self.toggle_validate
 
         self.current_widget = None
         self.output_update()
@@ -46,7 +52,92 @@ class EditorWin(QtGui.QMainWindow):
         self.patch_group.setEnabled(False)
         self.patch_templates_menu_create()
         self.patch_toolbtn.setMenu(self.patch_templates)
-        self.tool_group.setEnabled = self.tool_group_setEnabled
+        self.toggle_set(False)
+
+    def toggle_chk_wheelEvent(self, event):
+        if event.orientation() == QtCore.Qt.Vertical:
+            hbar = self.toggle_listview.horizontalScrollBar()
+            if event.delta() < 1:
+                hbar.setValue(hbar.value()+hbar.pageStep())
+            else:
+                hbar.setValue(hbar.value()-hbar.pageStep())
+
+    def toggle_list(self):
+#        self.toggle_set(False)
+        self.toggle_model = QtGui.QStandardItemModel()
+        self.toggle_listview.closeEditor = self.toggle_validate
+        for i in range (0, 127, 62):
+            item = QtGui.QStandardItem(str(i))
+            item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsDragEnabled)
+            self.toggle_model.appendRow(item)
+        self.toggle_listview.setModel(self.toggle_model)
+#        widths = [self.toggle_listview.sizeHintForIndex(self.toggle_model.indexFromItem(self.toggle_model.item(c))).width() for c in range(self.toggle_model.rowCount())]
+#        print [self.toggle_listview.sizeHintForRow(c) for c in range(self.toggle_model.rowCount())]
+#        self.toggle_listview.setMinimumWidth(sum(widths))
+
+    def toggle_validate(self, delegate, hint):
+        QtGui.QListView.closeEditor(self.toggle_listview, delegate, hint)
+        index = self.toggle_listview.currentIndex().row()
+        item = self.toggle_listview.model().item(index, 0)
+        value = item.text()
+        try:
+            int_value = int(value)
+            if int_value < 0:
+                item.setText('0')
+            elif int_value > 127:
+                item.setText('127')
+        except:
+            item.setText('127')
+
+    def toggle_set(self, value):
+        self.toggle_listview.setVisible(value)
+        self.toggle_remove_btn.setVisible(value)
+        self.toggle_add_btn.setVisible(value)
+        if not self.current_widget:
+            return
+        if not (self.current_widget.get('toggle') or self.current_widget.get('toggle_values') or self.current_widget.get('toggle_model')) and value:
+            toggle_model = QtGui.QStandardItemModel()
+            for i in [0, 127]:
+                item = QtGui.QStandardItem(str(i))
+                item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsDragEnabled)
+                toggle_model.appendRow(item)
+#                self.current_widget['toggle_values'] = (0, 127)
+                self.current_widget['toggle_model'] = toggle_model
+            self.toggle_listview.setModel(toggle_model)
+        self.current_widget['toggle'] = value
+        action = self.current_widget['widget'].toggle_action
+        if action:
+            #NOTE: I suppose that this might change in future version of Qt, since it could send a signal. Keep an eye
+            action.setChecked(value)
+
+    def toggle_value_add(self):
+        if self.toggle_listview.model().rowCount() > 8:
+            return
+        item = QtGui.QStandardItem('127')
+        item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsDragEnabled)
+        self.toggle_listview.model().appendRow(item)
+        self.toggle_range_check()
+
+    def toggle_value_remove(self):
+        if self.toggle_listview.model().rowCount() <= 2:
+            return
+        index = self.toggle_listview.currentIndex().row()
+        if index < 0:
+            index = self.toggle_listview.model().rowCount()-1
+        self.toggle_listview.model().takeRow(index)
+        self.toggle_range_check()
+
+    def toggle_range_check(self):
+        if not self.toggle_listview.model():
+            return
+        if self.toggle_listview.model().rowCount() >= 8:
+            self.toggle_add_btn.setEnabled(False)
+        else:
+            self.toggle_add_btn.setEnabled(True)
+        if self.toggle_listview.model().rowCount() <= 2:
+            self.toggle_remove_btn.setEnabled(False)
+        else:
+            self.toggle_remove_btn.setEnabled(True)
 
     def closeEvent(self, event):
         if self.current_widget:
@@ -292,6 +383,15 @@ class EditorWin(QtGui.QMainWindow):
     def tool_group_setEnabled(self, value):
         for button in self.tool_group.buttons():
             button.setEnabled(value)
+        self.toggle_listview.setEnabled(value)
+        if self.current_widget and not isinstance(self.current_widget['widget'], QtGui.QPushButton):
+            self.toggle_chk.setChecked(False)
+            self.toggle_chk.setEnabled(False)
+            toggle_model = QtGui.QStandardItemModel()
+            self.toggle_listview.setModel(toggle_model)
+        if value:
+            self.toggle_range_check()
+
 
     def led_reset(self):
         default_led = self.current_widget['widget'].siblingLed
@@ -440,11 +540,14 @@ class EditorWin(QtGui.QMainWindow):
 
         tooltip = self.main.widget_tooltip(widget, self.current_widget)
         widget.setToolTip(tooltip)
+        toggle_model = self.current_widget.get('toggle_model')
+        if toggle_model:
+            self.current_widget['toggle_values'] = tuple([int(toggle_model.item(i).text()) for i in range(toggle_model.rowCount())])
+
         self.main.map_dict[template][widget] = self.current_widget
 
     def widget_change(self, widget):
         self.enable_chk.setEnabled(True)
-        self.tool_group.setEnabled(True)
         #save previous widget
         if self.current_widget:
 #            print self.current_widget
@@ -484,6 +587,8 @@ class EditorWin(QtGui.QMainWindow):
                     self.led_action_combo.setCurrentIndex(1)
             #other values stuff to reset
             return
+
+#        self.tool_group.setEnabled(True)
 
         widget_dict['widget'] = widget
         enabled = widget_dict.get('enabled', True)
@@ -598,6 +703,31 @@ class EditorWin(QtGui.QMainWindow):
                     self.led_action_combo.lineEdit().setText(led_action)
         else:
             self.led_action_combo.lineEdit().setText(led_action)
+
+        #Toggle
+        if not isinstance(widget, QtGui.QPushButton):
+            self.toggle_chk.setChecked(False)
+            self.toggle_chk.setEnabled(False)
+            toggle_model = QtGui.QStandardItemModel()
+        else:
+#            self.toggle_chk.setEnabled(True)
+            toggle = self.current_widget.get('toggle', False)
+            if toggle:
+                self.toggle_chk.setChecked(True)
+            else:
+                self.toggle_chk.setChecked(False)
+            toggle_model = self.current_widget.get('toggle_model')
+            if not toggle_model:
+                toggle_values = self.current_widget.get('toggle_values')
+                toggle_model = QtGui.QStandardItemModel()
+                if toggle_values:
+                    for i in toggle_values:
+                        item = QtGui.QStandardItem(str(i))
+                        item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsDragEnabled)
+                        toggle_model.appendRow(item)
+                    self.current_widget['toggle'] = self.current_widget.get('toggle', True)
+                    self.current_widget['toggle_model'] = toggle_model
+        self.toggle_listview.setModel(toggle_model)
 
 
     def patch_edit_focusIn(self, event):

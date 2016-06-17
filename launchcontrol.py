@@ -50,8 +50,8 @@ class Win(QtGui.QMainWindow):
     widgetChanged = QtCore.pyqtSignal(object)
     outputChanged = QtCore.pyqtSignal()
 
-    def __init__(self, parent=None, mode='control', map_file=None, config=None, backend='alsa'):
-        QtGui.QMainWindow.__init__(self, parent)
+    def __init__(self, mode='control', map_file=None, config=None, backend='alsa'):
+        QtGui.QMainWindow.__init__(self, parent=None)
         uic.loadUi('launchcontrol.ui', self)
         self.mapping = True if mode=='mapping' else False
         self.map_dict = {}
@@ -96,6 +96,11 @@ class Win(QtGui.QMainWindow):
 
         self.operation_start()
         self.setFixedSize(self.width(), self.height())
+
+    @QtCore.pyqtSlot(str)
+    def std_manager(self, *args):
+        print 'STDERR!!!'
+        print args
 
     def startupbox_resizeEvent(self, event):
         QtGui.QWidget.resizeEvent(self.startup_box, event)
@@ -785,13 +790,28 @@ class Win(QtGui.QMainWindow):
                     dest = 1
                 elif len(out_ports) and dest > len(out_ports):
                     dest = len(out_ports)
+                toggle = patch_data.get('toggle')
+                if toggle:
+                    toggle_range = MyCycle(patch_data.get('toggle_values', (0, 127)))
+                    toggle_patch = md.Process(lambda ev,  cycle=toggle_range: md.event.MidiEvent(ev.type, ev.port, ev.channel, ev.data1, cycle.next()))
+                    #TODO finire qui, implementare nell'editor la modalità?
+                    if event[1] == md.CTRL:
+                        toggle_patch = md.CtrlValueFilter(ext[1]) >> toggle_patch
+                    else:
+                        toggle_patch = md.Filter(md.NOTEON) >> md.Print() >> toggle_patch
                 patch = patch_data.get('patch')
                 if not patch:
-                    patch = md.Pass()
+                    if not toggle:
+                        patch = md.Pass()
+                    else:
+                        patch = toggle_patch
                 else:
                     for rep in md_replace:
                         patch = patch.replace(rep, 'md.'+rep)
-                    patch = eval(patch)
+                    if not toggle:
+                        patch = eval(patch)
+                    else:
+                        patch = toggle_patch >> eval(patch)
                 text = patch_data.get('text')
                 led = patch_data.get('led', True)
                 led_basevalue = patch_data.get('led_basevalue', Enabled)
@@ -826,7 +846,7 @@ class Win(QtGui.QMainWindow):
 #                chan_dict = dest_list.values()[0]
                 chan_split_dict = {}
                 for chan, ctrl_dict in chan_dict.items():
-                    #TODO: FINISCI DI CORREGGERE, CAZZO!
+                    #TODO: Ottimizza sfruttando filtri per tutte le patch in Pass
                     if len(ctrl_dict) == 1:
                         if ctrl_dict.keys()[0] == md.CTRL:
                             scene = md.Split({md.CTRL: md.CtrlFilter((f for f in ctrl_dict.values()[0].keys())), md.NOTE: md.Discard()})
@@ -1145,7 +1165,7 @@ class Win(QtGui.QMainWindow):
                 toggle_action = QtGui.QAction('Toggle', widget)
                 toggle_action.setCheckable(True)
                 toggle_action.triggered.connect(self.editor_widget_toggle_set)
-#                widget.addAction(toggle_action)
+                widget.addAction(toggle_action)
                 widget.toggle_action = toggle_action
             else:
                 widget.toggle_action = None
@@ -1651,9 +1671,15 @@ class Win(QtGui.QMainWindow):
             self.editor_win.current_widget = None
             self.editor_win.clear_fields()
 
-    def editor_widget_toggle_set(self, *args):
-        pass
-#        sender_widget = self.sender().parent()
+    def editor_widget_toggle_set(self, value):
+        sender_widget = self.sender().parent()
+        if not self.map_dict[self.template][sender_widget].get('toggle'):
+            self.map_dict[self.template][sender_widget]['toggle'] = value
+            self.map_dict[self.template][sender_widget]['toggle_values'] = (0, 127)
+        else:
+            self.map_dict[self.template][sender_widget]['toggle'] = value
+        if self.editor_win.current_widget and self.editor_win.current_widget.get('widget') == sender_widget:
+            self.editor_win.toggle_chk.setChecked(value)
 
     def config_save(self):
         self.editor_win.widget_save(self.template)
@@ -1723,6 +1749,8 @@ class Win(QtGui.QMainWindow):
                             widget_data.pop('led_action')
                         elif k == 'patch' and (not len(v) or v == 'Pass()'):
                             widget_data.pop('patch')
+                        elif k == 'toggle_model':
+                            widget_data.pop('toggle_model')
                     map_dict[template][str(widget.objectName())] = widget_data
             if len(map_dict[template]) == 0:
                 map_dict.pop(template)

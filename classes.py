@@ -3,6 +3,36 @@ from PyQt4 import QtCore, QtGui
 from const import *
 from utils import *
 from copy import copy
+from itertools import cycle
+
+class MyCycle(int, object):
+    def __new__(self, values):
+        return int.__new__(self, values[0])
+    def __init__(self, values):
+        self.values = values
+        self.cycle = cycle(values)
+        self.current = self.cycle.next()
+    def __repr__(self):
+        return repr(self.current)
+    def __add__(self, other):
+        return self.current+other
+    def __sub__(self, other):
+        return self.current-other
+    def __neg__(self):
+        return -self.current
+    def __rsub__(self, other):
+        return other-self.current
+    def __pos__(self):
+        return self.current
+    def __radd__(self, other):
+        return other+self.current
+    def next(self):
+        self.current = self.cycle.next()
+        return self.current
+    def reset(self):
+        self.cycle = cycle(self.values)
+        self.current = self.cycle.next()
+        return self.current
 
 
 class SignalClass(object):
