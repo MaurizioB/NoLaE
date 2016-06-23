@@ -21,10 +21,10 @@ def set_led(template=0, *led_list):
     md.engine.output_event(newevent)
 
 def template_str(template):
-    if template >= 8:
-        return ('Factory', template-7)
-    else:
+    if template < 8:
         return ('User', template+1)
+    else:
+        return ('Factory', template-7)
 
 def elide_str(label, text):
     if not isinstance(text, str):

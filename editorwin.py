@@ -18,10 +18,12 @@ class OutputWidget(QtGui.QWidget):
 
 class EditorWin(QtGui.QMainWindow):
     labelChanged = QtCore.pyqtSignal(object, object)
+    widgetSaved = QtCore.pyqtSignal(int)
 
     def __init__(self, parent=None, mode='control'):
         QtGui.QMainWindow.__init__(self, parent)
         self.main = self.parent()
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.map_dict = self.main.map_dict
         uic.loadUi('patch.ui', self)
         self.patch_edit.textChanged.connect(self.patch_update)
@@ -44,7 +46,11 @@ class EditorWin(QtGui.QMainWindow):
         self.toggle_add_btn.clicked.connect(self.toggle_value_add)
         self.toggle_remove_btn.clicked.connect(self.toggle_value_remove)
         self.toggle_listview.closeEditor = self.toggle_validate
+        self.convert_chk.toggled.connect(self.convert_enable)
+        self.chan_reset_btn.clicked.connect(self.chan_reset)
 
+        self.convert_ctrl_radio.id = ToCtrl
+        self.convert_note_radio.id = ToNote
         self.current_widget = None
         self.output_update()
         self.models_setup()
@@ -62,19 +68,6 @@ class EditorWin(QtGui.QMainWindow):
             else:
                 hbar.setValue(hbar.value()-hbar.pageStep())
 
-    def toggle_list(self):
-#        self.toggle_set(False)
-        self.toggle_model = QtGui.QStandardItemModel()
-        self.toggle_listview.closeEditor = self.toggle_validate
-        for i in range (0, 127, 62):
-            item = QtGui.QStandardItem(str(i))
-            item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsDragEnabled)
-            self.toggle_model.appendRow(item)
-        self.toggle_listview.setModel(self.toggle_model)
-#        widths = [self.toggle_listview.sizeHintForIndex(self.toggle_model.indexFromItem(self.toggle_model.item(c))).width() for c in range(self.toggle_model.rowCount())]
-#        print [self.toggle_listview.sizeHintForRow(c) for c in range(self.toggle_model.rowCount())]
-#        self.toggle_listview.setMinimumWidth(sum(widths))
-
     def toggle_validate(self, delegate, hint):
         QtGui.QListView.closeEditor(self.toggle_listview, delegate, hint)
         index = self.toggle_listview.currentIndex().row()
@@ -90,18 +83,18 @@ class EditorWin(QtGui.QMainWindow):
             item.setText('127')
 
     def toggle_set(self, value):
-        self.toggle_listview.setVisible(value)
-        self.toggle_remove_btn.setVisible(value)
-        self.toggle_add_btn.setVisible(value)
+        self.toggle_listview.setEnabled(value)
+        self.toggle_remove_btn.setEnabled(value)
+        self.toggle_add_btn.setEnabled(value)
         if not self.current_widget:
             return
-        if not (self.current_widget.get('toggle') or self.current_widget.get('toggle_values') or self.current_widget.get('toggle_model')) and value:
+        if value and not (self.current_widget.get('toggle') or self.current_widget.get('toggle_values') or self.current_widget.get('toggle_model')):
             toggle_model = QtGui.QStandardItemModel()
             for i in [0, 127]:
                 item = QtGui.QStandardItem(str(i))
                 item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsDragEnabled)
                 toggle_model.appendRow(item)
-#                self.current_widget['toggle_values'] = (0, 127)
+                self.current_widget['toggle_values'] = (0, 127)
                 self.current_widget['toggle_model'] = toggle_model
             self.toggle_listview.setModel(toggle_model)
         self.current_widget['toggle'] = value
@@ -139,9 +132,22 @@ class EditorWin(QtGui.QMainWindow):
         else:
             self.toggle_remove_btn.setEnabled(True)
 
+    def convert_enable(self, value):
+        for button in self.convert_group.buttons():
+            button.setEnabled(value)
+
+    def chan_enable(self, value):
+        self.chan_spin.setEnabled(value)
+
+
     def closeEvent(self, event):
         if self.current_widget:
             self.widget_save()
+
+    def event(self, event):
+        if event.type() == QtCore.QEvent.WindowDeactivate:
+            self.widget_save()
+        return QtGui.QMainWindow.event(self, event)
 
     def patch_templates_menu_create(self):
         action_dict = [(
@@ -319,18 +325,19 @@ class EditorWin(QtGui.QMainWindow):
         self.led_action_combo.setModel(self.action_full_model)
         pass_item = QtGui.QStandardItem('Pass')
         disc_item = QtGui.QStandardItem('Ignore')
-        self.action_full_model.appendRow([pass_item, disc_item])
-        self.action_table.setSpan(0, 1, 1, 3)
+        toggle_item = QtGui.QStandardItem('Toggle')
+        self.action_full_model.appendRow([pass_item, disc_item, toggle_item])
+        self.action_table.setSpan(0, 2, 1, 2)
         self.action_table.resizeRowToContents(0)
         for row in range(4):
             self.action_full_model.appendRow([self.colormap_full_model.item(row, col).clone() for col in range(4)])
             self.action_table.resizeColumnToContents(row)
         self.action_table.setMinimumWidth(sum([self.action_table.columnWidth(c) for c in range(self.action_full_model.columnCount())]))
         self.action_dev_model = QtGui.QStandardItemModel()
-        self.action_dev_model.appendColumn([pass_item.clone(), disc_item.clone()])
+        self.action_dev_model.appendColumn([pass_item.clone(), disc_item.clone(), toggle_item.clone()])
         [self.action_dev_model.appendRow(self.colormap_dev_model.item(l).clone()) for l in range(7)]
         self.action_dir_model = QtGui.QStandardItemModel()
-        self.action_dir_model.appendColumn([pass_item.clone(), disc_item.clone()])
+        self.action_dir_model.appendColumn([pass_item.clone(), disc_item.clone(), toggle_item.clone()])
         [self.action_dir_model.appendRow(self.colormap_dir_model.item(l).clone()) for l in range(6)]
 
         #setting default leds:
@@ -338,8 +345,8 @@ class EditorWin(QtGui.QMainWindow):
         setBold(self.colormap_dev_model.item(1))
         setBold(self.colormap_dir_model.item(1))
         setBold(self.action_full_model.item(4, 3))
-        setBold(self.action_dev_model.item(8))
-        setBold(self.action_dir_model.item(7))
+        setBold(self.action_dev_model.item(9))
+        setBold(self.action_dir_model.item(8))
 
 
     def color_column_check(self, selected, previous):
@@ -385,13 +392,19 @@ class EditorWin(QtGui.QMainWindow):
             button.setEnabled(value)
         self.toggle_listview.setEnabled(value)
         if self.current_widget and not isinstance(self.current_widget['widget'], QtGui.QPushButton):
-            self.toggle_chk.setChecked(False)
+            for button in self.convert_group.buttons():
+                button.setEnabled(False)
+            self.convert_chk.setEnabled(False)
+            self.convert_chk.setChecked(False)
             self.toggle_chk.setEnabled(False)
+            self.toggle_chk.setChecked(False)
             toggle_model = QtGui.QStandardItemModel()
             self.toggle_listview.setModel(toggle_model)
         if value:
             self.toggle_range_check()
 
+    def chan_reset(self):
+        self.chan_spin.setValue(0)
 
     def led_reset(self):
         default_led = self.current_widget['widget'].siblingLed
@@ -432,8 +445,11 @@ class EditorWin(QtGui.QMainWindow):
             self.action_table.resizeColumnToContents(col)
         if col == 0:
             self.action_table.setRowHeight(1, self.action_table.rowHeight(0))
+            self.action_table.setRowHeight(2, self.action_table.rowHeight(0))
         else:
-            self.action_table.setRowHeight(1, self.action_table.rowHeight(self.action_table.model().rowCount()-1))
+            small_height = self.action_table.rowHeight(self.action_table.model().rowCount()-1)
+            self.action_table.setRowHeight(1, small_height)
+            self.action_table.setRowHeight(2, small_height)
         self.color_table.setMinimumWidth(sum([self.color_table.columnWidth(c) for c in range(self.led_base_combo.model().columnCount())]))
         self.action_table.setMinimumWidth(sum([self.action_table.columnWidth(c) for c in range(self.action_full_model.columnCount())]))
         self.current_widget['led'] = led - 1
@@ -501,6 +517,14 @@ class EditorWin(QtGui.QMainWindow):
         enabled = self.current_widget.get('enabled', True)
 #        dest = self.current_widget.get('dest', 1)
         text = self.current_widget.get('text', '')
+        self.current_widget['chan'] = self.chan_spin.value()
+        convert = self.convert_group.checkedButton().id
+        #TODO: not important: consider remembering the state, even if disabled
+        if self.convert_chk.isChecked():
+            self.current_widget['convert'] = convert
+        elif self.current_widget.get('convert'):
+            self.current_widget.pop('convert')
+
         patch = self.current_widget.get('patch')
         if text is not None:
             text = text.strip()
@@ -529,7 +553,7 @@ class EditorWin(QtGui.QMainWindow):
             else:
                 self.current_widget['led_basevalue'] = led_basevalue
             led_action = str(self.led_action_combo.currentText())
-            if led_action in ['Pass', 'Ignore']:
+            if led_action in ['Pass', 'Ignore', 'Toggle']:
                 led_action = eval(led_action)
             else:
                 try:
@@ -545,6 +569,7 @@ class EditorWin(QtGui.QMainWindow):
             self.current_widget['toggle_values'] = tuple([int(toggle_model.item(i).text()) for i in range(toggle_model.rowCount())])
 
         self.main.map_dict[template][widget] = self.current_widget
+        self.widgetSaved.emit(template)
 
     def widget_change(self, widget):
         self.enable_chk.setEnabled(True)
@@ -588,11 +613,11 @@ class EditorWin(QtGui.QMainWindow):
             #other values stuff to reset
             return
 
-#        self.tool_group.setEnabled(True)
-
         widget_dict['widget'] = widget
         enabled = widget_dict.get('enabled', True)
         self.current_widget = widget_dict
+        if enabled and self.enable_chk.isChecked():
+                self.tool_group.setEnabled(True)
         self.enable_chk.setChecked(enabled)
 
         #Destination port
@@ -609,6 +634,25 @@ class EditorWin(QtGui.QMainWindow):
         #Text
         text = widget_dict.get('text', '')
         self.text_edit.setText(text)
+
+        #Destination channel
+        chan = widget_dict.get('chan')
+        if chan == None:
+            self.chan_spin.setValue(0)
+        else:
+            self.chan_spin.setValue(chan)
+
+        #Convert event type
+        convert = widget_dict.get('convert')
+        if convert == None:
+            self.convert_chk.setChecked(False)
+            self.convert_ctrl_radio.setChecked(True)
+        else:
+            self.convert_chk.setChecked(True)
+            if convert == ToCtrl:
+                self.convert_ctrl_radio.setChecked(True)
+            else:
+                self.convert_note_radio.setChecked(True)
 
         #Patch
         patch = widget_dict.get('patch')
@@ -680,6 +724,12 @@ class EditorWin(QtGui.QMainWindow):
                 self.led_action_combo.setCurrentIndex(1)
             else:
                 self.led_action_combo.setModelColumn(1)
+                self.led_action_combo.setCurrentIndex(0)
+        elif led_action == Toggle:
+            if cols == 1:
+                self.led_action_combo.setCurrentIndex(2)
+            else:
+                self.led_action_combo.setModelColumn(2)
                 self.led_action_combo.setCurrentIndex(0)
         elif isinstance(led_action, int):
             if cols == 1:

@@ -17,10 +17,15 @@ class ReprConst(object):
 class Const(object):
     pass
 
-led_scale = [48, 49, 50, 51, 35, 19, 2, 3]
 dev_scale = [0x00, 0x10, 0x11, 0x22, 0x23, 0x20, 0x33]
 dir_scale = [0x00, 0x01, 0x21, 0x22, 0x32, 0x33]
+
+led_devscale = [x for t in [[a for r in range(21)] for a in dev_scale[1:]] for x in t] + [dev_scale[-1], dev_scale[-1]]
+led_dirscale = [x for t in [[a for r in range(25)] for a in dir_scale[1:]] for x in t] + [dir_scale[-1], dir_scale[-1], dir_scale[-1]]
+
+led_scale = [48, 49, 50, 51, 35, 19, 2, 3]
 led_fullscale = [x for t in [[a for r in range(16)] for a in led_scale] for x in t]
+
 row_heights = {0: 80, 1: 80, 2: 80, 3: 160, 4: 40, 5: 40}
 str_allowed = set(string.ascii_letters+string.digits+'.'+' ')
 
@@ -35,8 +40,11 @@ md_replace = ('Ctrl', 'Port', 'Channel', 'Velocity',
 patch_colors = (('darkred', 'red'), ('gray', 'black'))
 
 Pass, Ignore, Value, Push, Toggle, Widget, Mode, Ext = (ReprConst() for i in range(8))
+ToCtrl, ToNote = (ReprConst() for i in range(2))
 Disabled, Enabled, Triggered = (Const() for i in range(3))
 GroupMode, DestMode = (Const() for i in range(2))
+MapMode, EditMode, LiveMode = (Const() for i in range(3))
+modedict = {'mapping': MapMode, 'editor': EditMode, 'live': LiveMode}
 
 MAPCTRL = 0
 

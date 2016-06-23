@@ -11,7 +11,12 @@ class MyCycle(int, object):
     def __init__(self, values):
         self.values = values
         self.cycle = cycle(values)
+        self._index_cycle = cycle(range(1, len(values))+[0])
         self.current = self.cycle.next()
+        self._index = 0
+    @property
+    def index(self):
+        return self._index
     def __repr__(self):
         return repr(self.current)
     def __add__(self, other):
@@ -28,10 +33,12 @@ class MyCycle(int, object):
         return other+self.current
     def next(self):
         self.current = self.cycle.next()
+        self._index = self._index_cycle.next()
         return self.current
     def reset(self):
         self.cycle = cycle(self.values)
         self.current = self.cycle.next()
+        self._index = self._index_cycle.next()
         return self.current
 
 
@@ -49,13 +56,16 @@ class SignalClass(object):
         self.label = widget.siblingLabel
         self.basetext = text if text else ''
         self.text = self.basetext.format(self.value)
-        if led is not False:
+        if led is True:
             if widget.siblingLed is not None:
                 self.led = widget.siblingLed
             else:
                 self.led = None
-        else:
+        elif led is False:
             self.led = None
+        else:
+            self.led = led
+            widget.siblingLed = led
         
 #        self.led_basevalue = led_basevalue
         if self.led:
@@ -69,28 +79,38 @@ class SignalClass(object):
 
     def led_setup(self, basevalue):
         if basevalue == Enabled:
-            if self.id < 48:
+            if self.led < 40:
                 basevalue = 0x30
                 triggervalue = 3
-            elif 48 <= self.id < 52:
+                self.led_scale = led_fullscale
+            elif self.led < 44:
                 basevalue = 0x10
                 triggervalue = 0x33
+                self.led_scale = led_devscale
             else:
                 basevalue = 0x01
                 triggervalue = 0x33
+                self.led_scale = led_dirscale
             self.led_state = self.led_basevalue = basevalue
             self.led_triggervalue = triggervalue
         elif basevalue == Disabled:
             self.led_state = self.led_basevalue = 0
         else:
             self.led_state = self.led_basevalue = basevalue
-            self.led_triggervalue = 0x33 if 48 <= self.id < 52 else 3
+            self.led_triggervalue = 0x33 if self.led >= 40 else 3
+        self.widget.ledSet = self.ledSet = self.led_basevalue
+        self.siblingLed = self.led
 
     def led_pass_action(self, value):
         set_led(self.template, (self.led, led_fullscale[value]))
 
     def led_push_action(self, value):
         set_led(self.template, (self.led, self.led_triggervalue if value==self.ext[1] else self.led_basevalue))
+
+    def led_toggle_action(self, value):
+        if value != self.ext[1]:
+            return
+        set_led(self.template, (self.led, self.led_cycle[self.cycle.index]))
 
     def led_ignore_action(self, event):
         pass
@@ -104,6 +124,12 @@ class SignalClass(object):
                 self.led_action = self.led_push_action
             else:
                 self.led_action = self.led_pass_action
+        elif isinstance(action, MyCycle):
+            self.cycle = action
+            v_len = len(action.values)
+            div = 128 / (v_len - 1)
+            self.led_cycle = [self.led_basevalue] + [self.led_scale[div*(m+1)] for m in range(v_len-2)] + [self.led_scale[-1]]
+            self.led_action = self.led_toggle_action
         elif isinstance(action, int):
             self.led_triggervalue = action
             if isinstance(self.widget, QtGui.QPushButton):
@@ -122,11 +148,27 @@ class TemplateClass(object):
     def __init__(self, main, id, name=None):
         self.main = main
         self.id = id
-        self.name = name if name else id
+        self._name = name
         self.out_ports = None
         self.enabled = True
         self.widget_list = []
         self.current_widget = None
+
+    @property
+    def name(self):
+        if self._name:
+            return self._name
+        if self.id >= 8:
+            return 'Factory {}'.format(self.id-7)
+        else:
+            return 'User {}'.format(self.id+1)
+
+    @name.setter
+    def name(self, name):
+        self._name = name
+
+    def has_name(self):
+        return True if self._name else False
 
     def set_widget_signal(self, signal):
         self.widget_list[signal.id] = signal
@@ -135,11 +177,6 @@ class TemplateClass(object):
         return self.main.widget_order[id]
 
     def __repr__(self):
-        if isinstance(self.name, int):
-            if self.id >= 8:
-                return 'Factory {}'.format(self.id-7)
-            else:
-                return 'User {}'.format(self.id+1)
         return self.name
 
 
@@ -240,5 +277,5 @@ class MyToolTip(QtGui.QWidget):
         center = parent.x()+parent.width()/2
         self.setMinimumWidth(60)
         self.move(center-self.width()/2, parent.y()-10)
-        self.setStyleSheet('background-color: rgba(210,210,210,210)')
+        self.setStyleSheet('background-color: rgba(210,210,210,210); border: 1px solid gray;')
         self.raise_()
