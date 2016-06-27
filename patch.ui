@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>437</width>
-    <height>300</height>
+    <height>342</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -33,7 +33,7 @@
              <item>
               <widget class="QLabel" name="dest_lbl">
                <property name="text">
-                <string>Destinagion Port</string>
+                <string>Destinagion port</string>
                </property>
               </widget>
              </item>
@@ -483,11 +483,11 @@
  </resources>
  <connections/>
  <buttongroups>
+  <buttongroup name="convert_group"/>
   <buttongroup name="tool_group">
    <property name="exclusive">
     <bool>false</bool>
    </property>
   </buttongroup>
-  <buttongroup name="convert_group"/>
  </buttongroups>
 </ui>

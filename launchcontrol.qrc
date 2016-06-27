@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="icons">
+    <file>action-undo.png</file>
+    <file>eye.png</file>
+  </qresource>
+</RCC>

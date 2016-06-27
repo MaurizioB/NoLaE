@@ -1727,6 +1727,9 @@
     <property name="text">
      <string/>
     </property>
+    <property name="checkable">
+     <bool>false</bool>
+    </property>
    </widget>
    <widget class="QPushButton" name="btn_18">
     <property name="geometry">
@@ -1743,6 +1746,9 @@
     <property name="text">
      <string/>
     </property>
+    <property name="checkable">
+     <bool>false</bool>
+    </property>
    </widget>
    <widget class="QPushButton" name="btn_19">
     <property name="geometry">
@@ -1758,6 +1764,9 @@
     </property>
     <property name="text">
      <string/>
+    </property>
+    <property name="checkable">
+     <bool>false</bool>
     </property>
    </widget>
    <widget class="QGroupBox" name="map_group">
@@ -1873,7 +1882,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>0</number>
     </property>
     <property name="usesScrollButtons">
      <bool>false</bool>

@@ -24,8 +24,10 @@ class EditorWin(QtGui.QMainWindow):
         QtGui.QMainWindow.__init__(self, parent)
         self.main = self.parent()
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.conf_dict = self.main.conf_dict
         self.map_dict = self.main.map_dict
         uic.loadUi('patch.ui', self)
+        self.statusbar_create()
         self.patch_edit.textChanged.connect(self.patch_update)
         self.patch = ''
         self.patch_edit.valid = False
@@ -508,6 +510,64 @@ class EditorWin(QtGui.QMainWindow):
             else:
                 self.labelChanged.emit(self.current_widget['widget'], patch if len(patch) else True)
 
+    def statusbar_create(self):
+        self.statusbar.addWidget(QtGui.QLabel('Current mapping:'))
+        self.statusbar_empty = QtGui.QLabel('(None)')
+        self.statusbar_empty.setEnabled(False)
+        self.statusbar.addWidget(self.statusbar_empty)
+        etype_edit = QtGui.QLabel('', self.statusbar)
+        etype_edit.setFixedWidth(40)
+        event_edit = QtGui.QLabel('', self.statusbar)
+        event_edit.setFixedWidth(50)
+        event_lbl = QtGui.QLabel('event', self.statusbar)
+        echan_lbl = QtGui.QLabel('Channel', self.statusbar)
+        echan_edit = QtGui.QLabel('', self.statusbar)
+        echan_edit.setFixedWidth(12)
+        eext_lbl = QtGui.QLabel('Extension', self.statusbar)
+        eext_edit = QtGui.QLabel('', self.statusbar)
+        eext_edit.setFixedWidth(48)
+        emode_lbl = QtGui.QLabel('Mode', self.statusbar)
+        emode_edit = QtGui.QLabel('', self.statusbar)
+        emode_edit.setFixedWidth(42)
+        self.statusbar_edits = [etype_edit, event_edit, echan_edit, eext_edit, emode_edit]
+        self.statusbar_labels = [event_lbl, echan_lbl, eext_lbl, emode_lbl]
+        self.statusbar.addWidget(etype_edit)
+        self.statusbar.addWidget(event_lbl)
+        self.statusbar.addWidget(event_edit)
+        self.statusbar.addWidget(echan_lbl)
+        self.statusbar.addWidget(echan_edit)
+        self.statusbar.addWidget(eext_lbl)
+        self.statusbar.addWidget(eext_edit)
+        self.statusbar.addWidget(emode_lbl)
+        self.statusbar.addWidget(emode_edit)
+        for widget in self.statusbar_labels:
+            widget.hide()
+        for widget in self.statusbar_edits:
+            widget.hide()
+            widget.setFrameStyle(QtGui.QLabel.Sunken)
+            widget.setFrameShape(QtGui.QLabel.Panel)
+
+    def status_update(self, event_data):
+        if not event_data:
+            for widget in self.statusbar_labels+self.statusbar_edits:
+                widget.hide()
+            self.statusbar_empty.show()
+            return
+        self.statusbar_empty.hide()
+        chan, event_type, data1, ext, mode = event_data
+        if ext == True:
+            ext = '0-127'
+        else:
+            ext = '{}-{}'.format(ext[0], ext[1])
+        if event_type == md.NOTE:
+            data1 = '{} ({})'.format(md.util.note_name(data1), data1)
+        event_data = event_type, data1, chan, ext, mode
+        for widget in self.statusbar_labels:
+            widget.show()
+        for i, widget in enumerate(self.statusbar_edits):
+            widget.show()
+            widget.setText(str(event_data[i]))
+
     def widget_save(self, template=None):
         if not self.current_widget:
             return
@@ -568,7 +628,7 @@ class EditorWin(QtGui.QMainWindow):
         if toggle_model:
             self.current_widget['toggle_values'] = tuple([int(toggle_model.item(i).text()) for i in range(toggle_model.rowCount())])
 
-        self.main.map_dict[template][widget] = self.current_widget
+        self.main.conf_dict[template][widget] = self.current_widget
         self.widgetSaved.emit(template)
 
     def widget_change(self, widget):
@@ -583,6 +643,7 @@ class EditorWin(QtGui.QMainWindow):
         if not self.isVisible():
             return
         #Prepare editor window
+        self.status_update(self.main.map_dict[self.main.template].get(widget))
         self.base_group.setTitle('Base configuration: {}'.format(widget.readable))
         led_index = self.led_combo.currentIndex()
         led_item = self.ledlist_model.item(led_index, 0)
@@ -591,7 +652,7 @@ class EditorWin(QtGui.QMainWindow):
             setBold(self.ledlist_model.item(widget.siblingLed+1))
         else:
             setBold(self.ledlist_model.item(0))
-        widget_dict = self.main.map_dict[self.main.template][widget]
+        widget_dict = self.main.conf_dict[self.main.template][widget]
         if widget_dict == None:
             self.current_widget = {'widget': widget, 'enabled': False}
             self.enable_chk.setChecked(False)

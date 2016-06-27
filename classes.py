@@ -186,7 +186,7 @@ class Router(QtCore.QObject):
     mididings_exit = QtCore.pyqtSignal()
 
     def __init__(self, main, mapping=False, backend='alsa'):
-        QtCore.QThread.__init__(self)
+        QtCore.QObject.__init__(self)
         self.main = main
         self.backend = backend
         self.already_set = False

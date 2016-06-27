@@ -111,11 +111,19 @@ connected to.
 
 To set a controller just click on it and configure it using the editor window.
 
-The "Destination Port" is one of the outputs set before.
+The "Destination port" is one of the outputs set before.
 
 The "Text" will be displayed in the label under the controller (or on the
 button); if no text is set, the editor will show a "(set)" text just to let
 you know that the controller is enabled.
+
+The "Destination channel" allows to easily route the event to a specific
+channel. Leaving to "source" (default) will leave the incoming event unchanged;
+keep in mind that usually LC uses a different channel for every template.
+
+The "Force to Ctrl/Note" transforms the incoming event according to the selected
+radio button, if the event is of the other type. Further control will be added
+in the future (see "Toggle" function)
 
 The "LED" combobox allows you to select to which LED the controller is linked
 to, you can use the default one (which is automatically selected) or assign it
@@ -162,6 +170,11 @@ dropdown menu. More will be added in the future.
 The patch editor has a simple syntax-check system, and will **try** to guess if
 the entered patch is valid or not.
 
+Finally, the "Toggle" function allows to filter incoming events and cycle
+through a list of values. This is expecially useful for buttons, because allows
+to emit a different midi event value everytime the button is pressed.
+For example, for switching on or off an effect or enable/bypass an audio filter.
+
 To change the output ports of multiple controllers at once, drag your mouse
 while holding the right button pressed to select them, a dialog window will ask
 you to which port you want to set them.
@@ -206,8 +219,6 @@ otherwise JACK could even crash.
 - A graphical fixed layout has been used, so it might look ugly when using a
 non standard Qt theme.
 - Default values in the editor window do not always set
-- If an output port is removed in the editor and a controller was set to it,
-NoLaE will probably crash while opening Live mode (should be fixed, now)
 - The patch syntax checking system is not very reliable, you could type any
 "valid" python expression, even if it does not make sense as a patch
 - LED default colors in the editor window don't always match the actual ones
