@@ -65,8 +65,6 @@ class Win(QtGui.QMainWindow):
         self.template = 0
         self.widget_setup()
         self.getIcon = self.style().standardIcon
-        self.fileMenu = self.menuBar().addMenu('&File')
-        self.templateMenu = self.menuBar().addMenu('&Template')
         self.template_connect(self.mode)
         if self.mode != EditMode:
             self.router_thread = QtCore.QThread()
@@ -81,15 +79,15 @@ class Win(QtGui.QMainWindow):
                 self.setWindowTitle('{} - Mapping'.format(prog_name))
                 self.template_clear_action = QtGui.QAction('Clear template', self)
                 self.template_clear_action.triggered.connect(self.mapping_template_clear)
-                self.templateMenu.addAction(self.template_clear_action)
+                self.template_menu.addAction(self.template_clear_action)
                 self.router.midi_signal.connect(self.midi_map)
                 self.showmap_btn.clicked.connect(self.show_map)
                 self.operation_start = self.mapping_start
                 self.router.template_change.connect(self.template_remote_set)
-                self.fileMenu.addAction(saveAction)
+                self.file_menu.addAction(saveAction)
             else:
                 self.setWindowTitle('{} - Live'.format(prog_name))
-                self.templateMenu.setEnabled(False)
+                self.template_menu.setEnabled(False)
                 self.scenes, out_ports = self.routing_setup()
                 self.router.set_config(self.scenes, out_ports=out_ports)
                 self.router.midi_signal.connect(self.midi_action)
@@ -106,35 +104,35 @@ class Win(QtGui.QMainWindow):
             self.template_clipcut = False
             rename_action = QtGui.QAction('Rename', self)
             rename_action.triggered.connect(lambda: self.template_rename_dialog(template=self.template))
-            self.templateMenu.addAction(rename_action)
+            self.template_menu.addAction(rename_action)
             copy_action = QtGui.QAction('Copy', self)
             copy_action.triggered.connect(lambda: self.template_copy(template=self.template))
-            self.templateMenu.addAction(copy_action)
+            self.template_menu.addAction(copy_action)
             cut_action = QtGui.QAction('Cut', self)
             cut_action.triggered.connect(lambda: self.template_cut(template=self.template))
-            self.templateMenu.addAction(cut_action)
+            self.template_menu.addAction(cut_action)
             paste_action = QtGui.QAction('Paste', self)
             paste_action.baseText = 'Paste'
             paste_action.preText = 'from'
             paste_action.triggered.connect(lambda: self.template_paste(template=self.template))
             paste_action.setEnabled(False)
-            self.templateMenu.addAction(paste_action)
+            self.template_menu.addAction(paste_action)
             replace_action = QtGui.QAction('Replace', self)
             replace_action.baseText = 'Replace'
             replace_action.preText = 'with'
             replace_action.triggered.connect(lambda: self.template_replace(template=self.template))
             replace_action.setEnabled(False)
-            self.templateMenu.addAction(replace_action)
+            self.template_menu.addAction(replace_action)
             swap_action = QtGui.QAction('Swap', self)
             swap_action.baseText = 'Swap'
             swap_action.preText = 'with'
             swap_action.triggered.connect(lambda: self.template_swap(dest_template=self.template))
             swap_action.setEnabled(False)
-            self.templateMenu.addAction(swap_action)
+            self.template_menu.addAction(swap_action)
             self.template_menu_actions = paste_action, replace_action, swap_action
             self.template_clear_action = QtGui.QAction('Clear template', self)
             self.template_clear_action.triggered.connect(lambda: self.editor_template_clear(template=self.template))
-            self.templateMenu.addAction(self.template_clear_action)
+            self.template_menu.addAction(self.template_clear_action)
 
             self.router_thread = None
             self.router = None
@@ -143,14 +141,13 @@ class Win(QtGui.QMainWindow):
         quitAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_DialogCloseButton), '&Quit', self)
         quitAction.setShortcut('Ctrl+Q')
         quitAction.triggered.connect(QtGui.qApp.quit)
-        self.fileMenu.addAction(quitAction)
-        self.helpMenu = self.menuBar().addMenu('&?')
+        self.file_menu.addAction(quitAction)
         aboutAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_DialogHelpButton), 'About &{}'.format(prog_name), self)
         aboutAction.triggered.connect(self.about_box)
-        self.helpMenu.addAction(aboutAction)
+        self.help_menu.addAction(aboutAction)
         aboutQtAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_TitleBarMenuButton), 'About &Qt', self)
         aboutQtAction.triggered.connect(self.about_qt)
-        self.helpMenu.addAction(aboutQtAction)
+        self.help_menu.addAction(aboutQtAction)
 #        self.template_connect(mode)
 
         self.operation_start()
@@ -1569,7 +1566,7 @@ class Win(QtGui.QMainWindow):
             event_type = event.type
         else:
             event_type = md.NOTE
-        widget_data = self.conf_dict[self.template].get((event.channel, event_type, event.data1))
+        widget_data = self.map_dict[self.template].get((event.channel, event_type, event.data1))
         if not widget_data:
             return
         widget_data.trigger(event.data2)
@@ -1585,11 +1582,15 @@ class Win(QtGui.QMainWindow):
                 widget.setDown(True)
             elif event.data2 == ext[0]:
                 widget.setDown(False)
-        self.conf_dict[self.template][(event.channel, event_type, event.data1)].value = event.data2
+        self.map_dict[self.template][(event.channel, event_type, event.data1)].value = event.data2
 
 
     def editor_start(self):
         from editorwin import EditorWin, OutputWidget
+        for groupbox in [self.dev_groupbox, self.track_groupbox, self.send_groupbox]:
+            rename_action = QtGui.QAction('Rename group', groupbox)
+            rename_action.triggered.connect(self.group_rename)
+            groupbox.addAction(rename_action)
         self.map_group.setVisible(False)
         self.overlay_tooltip_list = []
         self.label_order = []
@@ -1655,7 +1656,7 @@ class Win(QtGui.QMainWindow):
 
         self.output_widget = OutputWidget(self.centralWidget())
         self.output_widget.setGeometry(self.map_group.geometry())
-        self.output_widget.move(570, 420)
+#        self.output_widget.move(570, 420)
         self.output_listview = self.output_widget.output_list
         output_action = QtGui.QAction('Edit', self.output_listview)
         output_action.triggered.connect(self.output_port_edit)
@@ -1922,19 +1923,19 @@ class Win(QtGui.QMainWindow):
         groupbox = QtGui.QGroupBox(name, self.centralWidget())
         groupbox.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
         rename_action = QtGui.QAction('Rename group', groupbox)
-        rename_action.triggered.connect(self.rename_group)
+        rename_action.triggered.connect(self.group_rename)
         groupbox.addAction(rename_action)
         color_action = QtGui.QAction('Set background color', groupbox)
-        color_action.triggered.connect(self.color_group)
+        color_action.triggered.connect(self.group_color_set)
         groupbox.addAction(color_action)
         raise_action = QtGui.QAction('Raise group', groupbox)
-        raise_action.triggered.connect(self.raise_group)
+        raise_action.triggered.connect(self.group_raise)
         groupbox.addAction(raise_action)
         lower_action = QtGui.QAction('Lower group', groupbox)
-        lower_action.triggered.connect(self.lower_group)
+        lower_action.triggered.connect(self.group_lower)
         groupbox.addAction(lower_action)
         delete_action = QtGui.QAction('Delete group', groupbox)
-        delete_action.triggered.connect(self.delete_group)
+        delete_action.triggered.connect(self.group_delete)
         groupbox.addAction(delete_action)
 #        group_menu.addAction(rename_action)
 #        group_menu.addAction(color_action)
@@ -1976,19 +1977,19 @@ class Win(QtGui.QMainWindow):
         else:
             groupbox.deleteLater()
 
-    def rename_group(self):
+    def group_rename(self):
         groupbox = self.sender().parent()
         label, res = QtGui.QInputDialog.getText(self, 'Group name', 'Enter name for this group', QtGui.QLineEdit.Normal, groupbox.title())
         if res:
             groupbox.setTitle(label)
 
-    def delete_group(self):
+    def group_delete(self):
         groupbox = self.sender().parent()
         self.template_groups[self.template].pop(self.template_groups[self.template].index(groupbox))
         groupbox.deleteLater()
         print self.template_groups[self.template]
 
-    def color_group(self):
+    def group_color_set(self):
         groupbox = self.sender().parent()
         bgcolor = groupbox.palette().background().color()
         color = QtGui.QColorDialog.getColor(bgcolor, self, 'prot', QtGui.QColorDialog.ShowAlphaChannel)
@@ -2004,7 +2005,7 @@ class Win(QtGui.QMainWindow):
             groupbox.setStyleSheet('')
             groupbox.colors = None
 
-    def raise_group(self):
+    def group_raise(self):
         groupbox = self.sender().parent()
         for id, group in enumerate(self.template_groups[self.template]):
             if group == groupbox:
@@ -2014,7 +2015,7 @@ class Win(QtGui.QMainWindow):
         temp = self.template_groups[self.template].pop(group_id)
         self.template_groups[self.template].insert(0, temp)
 
-    def lower_group(self, toggle=None, groupbox=None):
+    def group_lower(self, toggle=None, groupbox=None):
         if groupbox == None:
             groupbox = self.sender().parent()
         last = self.template_groups[self.template][-1]

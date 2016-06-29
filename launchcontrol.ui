@@ -270,14 +270,17 @@
      <string/>
     </property>
    </widget>
-   <widget class="QGroupBox" name="groupBox_9">
+   <widget class="QGroupBox" name="send_groupbox">
     <property name="geometry">
      <rect>
       <x>570</x>
-      <y>100</y>
+      <y>90</y>
       <width>111</width>
-      <height>71</height>
+      <height>61</height>
      </rect>
+    </property>
+    <property name="contextMenuPolicy">
+     <enum>Qt::ActionsContextMenu</enum>
     </property>
     <property name="title">
      <string>Send</string>
@@ -285,10 +288,10 @@
     <widget class="QPushButton" name="btn_20">
      <property name="geometry">
       <rect>
-       <x>10</x>
+       <x>5</x>
        <y>30</y>
-       <width>41</width>
-       <height>20</height>
+       <width>51</width>
+       <height>21</height>
       </rect>
      </property>
      <property name="contextMenuPolicy">
@@ -301,10 +304,10 @@
     <widget class="QPushButton" name="btn_21">
      <property name="geometry">
       <rect>
-       <x>60</x>
+       <x>55</x>
        <y>30</y>
-       <width>41</width>
-       <height>20</height>
+       <width>51</width>
+       <height>21</height>
       </rect>
      </property>
      <property name="contextMenuPolicy">
@@ -315,14 +318,17 @@
      </property>
     </widget>
    </widget>
-   <widget class="QGroupBox" name="groupBox_10">
+   <widget class="QGroupBox" name="track_groupbox">
     <property name="geometry">
      <rect>
       <x>570</x>
-      <y>180</y>
+      <y>170</y>
       <width>111</width>
-      <height>71</height>
+      <height>61</height>
      </rect>
+    </property>
+    <property name="contextMenuPolicy">
+     <enum>Qt::ActionsContextMenu</enum>
     </property>
     <property name="title">
      <string>Track</string>
@@ -330,10 +336,10 @@
     <widget class="QPushButton" name="btn_22">
      <property name="geometry">
       <rect>
-       <x>10</x>
+       <x>5</x>
        <y>30</y>
-       <width>41</width>
-       <height>20</height>
+       <width>51</width>
+       <height>21</height>
       </rect>
      </property>
      <property name="contextMenuPolicy">
@@ -346,10 +352,10 @@
     <widget class="QPushButton" name="btn_23">
      <property name="geometry">
       <rect>
-       <x>60</x>
+       <x>55</x>
        <y>30</y>
-       <width>41</width>
-       <height>20</height>
+       <width>51</width>
+       <height>21</height>
       </rect>
      </property>
      <property name="contextMenuPolicy">
@@ -1696,86 +1702,13 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QPushButton" name="btn_16">
-    <property name="geometry">
-     <rect>
-      <x>590</x>
-      <y>260</y>
-      <width>71</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="btn_17">
-    <property name="geometry">
-     <rect>
-      <x>590</x>
-      <y>300</y>
-      <width>71</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-    <property name="checkable">
-     <bool>false</bool>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="btn_18">
-    <property name="geometry">
-     <rect>
-      <x>590</x>
-      <y>340</y>
-      <width>71</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-    <property name="checkable">
-     <bool>false</bool>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="btn_19">
-    <property name="geometry">
-     <rect>
-      <x>590</x>
-      <y>380</y>
-      <width>71</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-    <property name="checkable">
-     <bool>false</bool>
-    </property>
-   </widget>
    <widget class="QGroupBox" name="map_group">
     <property name="geometry">
      <rect>
       <x>570</x>
-      <y>420</y>
+      <y>430</y>
       <width>111</width>
-      <height>141</height>
+      <height>131</height>
      </rect>
     </property>
     <property name="title">
@@ -1876,7 +1809,7 @@
     <property name="geometry">
      <rect>
       <x>570</x>
-      <y>10</y>
+      <y>0</y>
       <width>111</width>
       <height>81</height>
      </rect>
@@ -2298,6 +2231,181 @@
      </layout>
     </widget>
    </widget>
+   <widget class="QGroupBox" name="dev_groupbox">
+    <property name="geometry">
+     <rect>
+      <x>570</x>
+      <y>250</y>
+      <width>111</width>
+      <height>171</height>
+     </rect>
+    </property>
+    <property name="contextMenuPolicy">
+     <enum>Qt::ActionsContextMenu</enum>
+    </property>
+    <property name="title">
+     <string>Device</string>
+    </property>
+    <widget class="QPushButton" name="btn_16">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>20</y>
+       <width>71</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="contextMenuPolicy">
+      <enum>Qt::ActionsContextMenu</enum>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_17">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>60</y>
+       <width>71</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="contextMenuPolicy">
+      <enum>Qt::ActionsContextMenu</enum>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="checkable">
+      <bool>false</bool>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_18">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>100</y>
+       <width>71</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="contextMenuPolicy">
+      <enum>Qt::ActionsContextMenu</enum>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="checkable">
+      <bool>false</bool>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_19">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>140</y>
+       <width>71</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="contextMenuPolicy">
+      <enum>Qt::ActionsContextMenu</enum>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="checkable">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </widget>
+   <zorder>dev_groupbox</zorder>
+   <zorder>btn_00</zorder>
+   <zorder>btn_01</zorder>
+   <zorder>btn_02</zorder>
+   <zorder>btn_03</zorder>
+   <zorder>btn_04</zorder>
+   <zorder>btn_05</zorder>
+   <zorder>btn_06</zorder>
+   <zorder>btn_07</zorder>
+   <zorder>btn_11</zorder>
+   <zorder>btn_12</zorder>
+   <zorder>btn_10</zorder>
+   <zorder>btn_15</zorder>
+   <zorder>btn_08</zorder>
+   <zorder>btn_09</zorder>
+   <zorder>btn_14</zorder>
+   <zorder>btn_13</zorder>
+   <zorder>send_groupbox</zorder>
+   <zorder>track_groupbox</zorder>
+   <zorder>knob_12</zorder>
+   <zorder>knob_13</zorder>
+   <zorder>knob_20</zorder>
+   <zorder>knob_21</zorder>
+   <zorder>knob_22</zorder>
+   <zorder>knob_23</zorder>
+   <zorder>label_knob_10</zorder>
+   <zorder>knob_19</zorder>
+   <zorder>label_knob_18</zorder>
+   <zorder>knob_18</zorder>
+   <zorder>knob_11</zorder>
+   <zorder>knob_10</zorder>
+   <zorder>label_knob_11</zorder>
+   <zorder>label_knob_09</zorder>
+   <zorder>knob_17</zorder>
+   <zorder>knob_09</zorder>
+   <zorder>label_knob_17</zorder>
+   <zorder>label_knob_01</zorder>
+   <zorder>knob_01</zorder>
+   <zorder>label_knob_16</zorder>
+   <zorder>knob_08</zorder>
+   <zorder>label_knob_08</zorder>
+   <zorder>knob_16</zorder>
+   <zorder>knob_00</zorder>
+   <zorder>label_knob_00</zorder>
+   <zorder>knob_02</zorder>
+   <zorder>label_knob_02</zorder>
+   <zorder>knob_07</zorder>
+   <zorder>knob_05</zorder>
+   <zorder>label_knob_06</zorder>
+   <zorder>label_knob_04</zorder>
+   <zorder>knob_03</zorder>
+   <zorder>label_knob_03</zorder>
+   <zorder>label_knob_05</zorder>
+   <zorder>knob_06</zorder>
+   <zorder>label_knob_07</zorder>
+   <zorder>knob_04</zorder>
+   <zorder>label_fader_07</zorder>
+   <zorder>label_fader_04</zorder>
+   <zorder>fader_06</zorder>
+   <zorder>fader_07</zorder>
+   <zorder>label_fader_06</zorder>
+   <zorder>label_fader_05</zorder>
+   <zorder>fader_04</zorder>
+   <zorder>fader_05</zorder>
+   <zorder>label_knob_15</zorder>
+   <zorder>label_knob_14</zorder>
+   <zorder>knob_14</zorder>
+   <zorder>knob_15</zorder>
+   <zorder>label_fader_03</zorder>
+   <zorder>label_fader_01</zorder>
+   <zorder>label_fader_02</zorder>
+   <zorder>fader_00</zorder>
+   <zorder>label_fader_00</zorder>
+   <zorder>fader_03</zorder>
+   <zorder>fader_01</zorder>
+   <zorder>fader_02</zorder>
+   <zorder>label_knob_12</zorder>
+   <zorder>label_knob_13</zorder>
+   <zorder>label_knob_19</zorder>
+   <zorder>label_knob_20</zorder>
+   <zorder>label_knob_21</zorder>
+   <zorder>label_knob_22</zorder>
+   <zorder>label_knob_23</zorder>
+   <zorder>map_group</zorder>
+   <zorder>template_lbl</zorder>
+   <zorder>templates_tab</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -2308,6 +2416,24 @@
      <height>17</height>
     </rect>
    </property>
+   <widget class="QMenu" name="file_menu">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="template_menu">
+    <property name="title">
+     <string>&amp;Template</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="help_menu">
+    <property name="title">
+     <string>&amp;?</string>
+    </property>
+   </widget>
+   <addaction name="file_menu"/>
+   <addaction name="template_menu"/>
+   <addaction name="help_menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="widget_clear_action">
