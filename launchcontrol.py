@@ -1375,9 +1375,21 @@ class Win(QtGui.QMainWindow):
                     #TODO: Ottimizza sfruttando filtri per tutte le patch in Pass
                     if len(ctrl_dict) == 1:
                         if ctrl_dict.keys()[0] == md.CTRL:
-                            scene = md.Split({md.CTRL: md.CtrlFilter((f for f in ctrl_dict.values()[0].keys())), md.NOTE: md.Discard()})
+#                            scene = md.Split({md.CTRL: md.CtrlFilter((f for f in ctrl_dict.values()[0].keys())), md.NOTE: md.Discard()})
+                            filters = []
+                            patches = []
+                            for f, s in ctrl_dict.values()[0].items():
+                                filters.append(f)
+                                patches.append(s.patch)
+                            scene = md.Split({md.CTRL: md.CtrlFilter(ctrls=filters) >> patches})
                         else:
-                            scene = md.Split({md.NOTE: md.KeyFilter(notes=[f for f in ctrl_dict[md.NOTE].keys()]), md.CTRL: md.Discard()})
+#                            scene = md.Split({md.NOTE: md.KeyFilter(notes=[f for f in ctrl_dict[md.NOTE].keys()]), md.CTRL: md.Discard()})
+                            filters = []
+                            patches = []
+                            for f, s in ctrl_dict[md.NOTE].items():
+                                filters.append(f)
+                                patches.append(s.patch)
+                            scene = md.Split({md.NOTE: md.KeyFilter(notes=filters) >> patches })
                     else:
                         scene = md.Split({md.CTRL: md.CtrlSplit({f:s.patch for f, s in ctrl_dict[md.CTRL].items()}), 
                                           md.NOTE: md.KeySplit({f:s.patch for f, s in ctrl_dict[md.NOTE].items()})})
@@ -1411,7 +1423,7 @@ class Win(QtGui.QMainWindow):
             #TODO: implement name inside TemplateClass
             template_id = self.template_list[template].name
             scenes[template+1] = md.Scene('{} template {}'.format(*template_str(template)) if isinstance(template_id, int) else 'Template {}'.format(template_id), template_scene)
-#        print scenes
+#            print template_scene
         self.map_dict = temp_map_dict
         return scenes, out_ports
 

@@ -61,6 +61,8 @@ class EditorWin(QtGui.QMainWindow):
         self.patch_templates_menu_create()
         self.patch_toolbtn.setMenu(self.patch_templates)
         self.toggle_set(False)
+        metrics = QtGui.QFontMetrics(self.patch_edit.font())
+        self.patch_edit.setTabStopWidth(4*metrics.width(' '))
 
     def toggle_chk_wheelEvent(self, event):
         if event.orientation() == QtCore.Qt.Vertical:
@@ -559,8 +561,7 @@ class EditorWin(QtGui.QMainWindow):
             ext = '0-127'
         else:
             ext = '{}-{}'.format(ext[0], ext[1])
-        if event_type == md.NOTE:
-            data1 = '{} ({})'.format(md.util.note_name(data1), data1)
+        data1 = '{} ({})'.format(data1, md.util.note_name(data1))
         event_data = event_type, data1, chan, ext, mode
         for widget in self.statusbar_labels:
             widget.show()
