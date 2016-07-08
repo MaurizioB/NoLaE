@@ -31,10 +31,11 @@ str_allowed = set(string.ascii_letters+string.digits+'.'+' ')
 
 #TODO Split is missing, update function with regex
 md_replace = ('Ctrl', 'Port', 'Channel', 'Velocity', 
-           'Note', 'Pitchbend', 'Aftertouch', 'Program', 'SysEx', 'Generator', 
-           'extra.Harmonize', 'LimitPolyphony', 'MakeMonophonic', 'LatchNotes', 'Panic'
-           'Discard', 'Pass', 'Sanitize', 'Print', 
-           'EVENT'
+           'Note', 'Pitchbend', 'Aftertouch', 'Program', 'Generator', 
+           'event.MidiEvent', 'event.SysExEvent', 
+           'extra.Harmonize', 'LimitPolyphony', 'MakeMonophonic', 'LatchNotes', 'Panic', 
+           'Discard', 'Pass', 'Sanitize', 'Print', 'Process', 'Call', 
+           'EVENT_DATA1', 'EVENT_DATA2', 
            )
 
 patch_colors = (('darkred', 'red'), ('gray', 'black'))

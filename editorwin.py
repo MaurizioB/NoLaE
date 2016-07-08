@@ -48,8 +48,13 @@ class EditorWin(QtGui.QMainWindow):
         self.toggle_add_btn.clicked.connect(self.toggle_value_add)
         self.toggle_remove_btn.clicked.connect(self.toggle_value_remove)
         self.toggle_listview.closeEditor = self.toggle_validate
-        self.convert_chk.toggled.connect(self.convert_enable)
+        self.range_chk.toggled.connect(self.range_set)
+        self.convert_chk.toggled.connect(self.convert_set)
         self.chan_reset_btn.clicked.connect(self.chan_reset)
+        self.convert_ctrl_radio.toggled.connect(self.convert_group_toggle)
+        self.convert_note_radio.toggled.connect(self.convert_group_toggle)
+        self.force_note_change_radio.toggled.connect(self.force_note_change_toggle)
+        self.convert_piano_btn.clicked.connect(self.piano_show)
 
         self.convert_ctrl_radio.id = ToCtrl
         self.convert_note_radio.id = ToNote
@@ -58,11 +63,15 @@ class EditorWin(QtGui.QMainWindow):
         self.models_setup()
         self.base_group.setEnabled(False)
         self.patch_group.setEnabled(False)
+        self.convert_set(False)
         self.patch_templates_menu_create()
         self.patch_toolbtn.setMenu(self.patch_templates)
-        self.toggle_set(False)
+#        self.toggle_set(False)
         metrics = QtGui.QFontMetrics(self.patch_edit.font())
         self.patch_edit.setTabStopWidth(4*metrics.width(' '))
+
+        self.piano = Piano(self)
+        self.piano.setModal(True)
 
     def toggle_chk_wheelEvent(self, event):
         if event.orientation() == QtCore.Qt.Vertical:
@@ -92,15 +101,17 @@ class EditorWin(QtGui.QMainWindow):
         self.toggle_add_btn.setEnabled(value)
         if not self.current_widget:
             return
-        if value and not (self.current_widget.get('toggle') or self.current_widget.get('toggle_values') or self.current_widget.get('toggle_model')):
-            toggle_model = QtGui.QStandardItemModel()
-            for i in [0, 127]:
-                item = QtGui.QStandardItem(str(i))
-                item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsDragEnabled)
-                toggle_model.appendRow(item)
+        if value:
+            if not (self.current_widget.get('toggle') or self.current_widget.get('toggle_values') or self.current_widget.get('toggle_model')):
+                toggle_model = QtGui.QStandardItemModel()
+                for i in [0, 127]:
+                    item = QtGui.QStandardItem(str(i))
+                    item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsDragEnabled)
+                    toggle_model.appendRow(item)
                 self.current_widget['toggle_values'] = (0, 127)
                 self.current_widget['toggle_model'] = toggle_model
-            self.toggle_listview.setModel(toggle_model)
+                self.toggle_listview.setModel(toggle_model)
+            self.range_chk.setChecked(False)
         self.current_widget['toggle'] = value
         action = self.current_widget['widget'].toggle_action
         if action:
@@ -136,13 +147,61 @@ class EditorWin(QtGui.QMainWindow):
         else:
             self.toggle_remove_btn.setEnabled(True)
 
-    def convert_enable(self, value):
+    def range_set(self, value):
+        self.range_min_spin.setEnabled(value)
+        self.range_max_spin.setEnabled(value)
+        self.range_combo.setEnabled(True if value and not isinstance(self.current_widget.get('widget'), QtGui.QPushButton) else False)
+        self.range_min_lbl.setEnabled(value)
+        self.range_max_lbl.setEnabled(value)
+        self.range_scale_lbl.setEnabled(True if value and not isinstance(self.current_widget.get('widget'), QtGui.QPushButton) else False)
+        if value:
+            self.toggle_chk.setChecked(False)
+            if not self.current_widget.get('range'):
+                self.current_widget['range'] = value
+                self.current_widget['range_values'] = (0, 127, 0)
+
+    def convert_set(self, value):
         for button in self.convert_group.buttons():
             button.setEnabled(value)
+        self.force_note_frame.setVisible(value)
+        self.force_ctrl_frame.setVisible(value)
+        if self.convert_ctrl_radio.isChecked():
+            ctrl = True
+        else:
+            ctrl = False
+        self.force_ctrl_lbl.setEnabled(ctrl)
+        self.force_ctrl_spin.setEnabled(ctrl)
+        self.force_note_toggle_chk.setEnabled(not ctrl)
+        self.force_note_event_lbl.setEnabled(not ctrl)
+        self.force_note_change_radio.setEnabled(not ctrl)
+        self.force_vel_change_radio.setEnabled(not ctrl)
+        self.force_note_lbl.setEnabled(not ctrl)
+        self.force_note_combo.setEnabled(True if (not ctrl and self.force_vel_change_radio.isChecked()) else False)
+        self.convert_piano_btn.setEnabled(not ctrl)
+        self.force_vel_lbl.setEnabled(not ctrl)
+        self.force_vel_spin.setEnabled(not ctrl)
 
-    def chan_enable(self, value):
-        self.chan_spin.setEnabled(value)
+    def convert_group_toggle(self, value):
+        if not value:
+            return
+        if self.sender() == self.convert_ctrl_radio:
+            ctrl = True
+        else:
+            ctrl = False
+        self.force_ctrl_lbl.setEnabled(ctrl)
+        self.force_ctrl_spin.setEnabled(ctrl)
+        self.force_note_toggle_chk.setEnabled(not ctrl)
+        self.force_note_event_lbl.setEnabled(not ctrl)
+        self.force_note_change_radio.setEnabled(not ctrl)
+        self.force_vel_change_radio.setEnabled(not ctrl)
+        self.force_note_lbl.setEnabled(not ctrl)
+        self.force_note_combo.setEnabled(True if (not ctrl and self.force_vel_change_radio.isChecked()) else False)
+        self.convert_piano_btn.setEnabled(not ctrl)
+        self.force_vel_lbl.setEnabled(not ctrl)
+        self.force_vel_spin.setEnabled(not ctrl)
 
+    def force_note_change_toggle(self, value):
+        self.force_note_combo.setEnabled(not value)
 
     def closeEvent(self, event):
         if self.current_widget:
@@ -352,6 +411,22 @@ class EditorWin(QtGui.QMainWindow):
         setBold(self.action_dev_model.item(9))
         setBold(self.action_dir_model.item(8))
 
+        #creating notes for force_note_combo
+        self.note_model = QtGui.QStandardItemModel()
+        item = QtGui.QStandardItem('(incoming)')
+        self.note_model.appendRow(item)
+        for n in range(127):
+            note_name = md.util.note_name(n).upper()
+            if '#' in note_name:
+                note_name = '{} {}'.format(note_name[:2], note_name[2:])
+            else:
+                note_name = '{} {}'.format(note_name[:1], note_name[1:])
+            item = QtGui.QStandardItem(note_name)
+            self.note_model.appendRow(item)
+        for o in range(11):
+            setBold(self.note_model.item(o*12+1, 0))
+        self.force_note_combo.setModel(self.note_model)
+
 
     def color_column_check(self, selected, previous):
         index = self.color_table.selectedIndexes()[0]
@@ -394,18 +469,33 @@ class EditorWin(QtGui.QMainWindow):
     def tool_group_setEnabled(self, value):
         for button in self.tool_group.buttons():
             button.setEnabled(value)
-        self.toggle_listview.setEnabled(value)
-        if self.current_widget and not isinstance(self.current_widget['widget'], QtGui.QPushButton):
-            for button in self.convert_group.buttons():
-                button.setEnabled(False)
-            self.convert_chk.setEnabled(False)
-            self.convert_chk.setChecked(False)
-            self.toggle_chk.setEnabled(False)
-            self.toggle_chk.setChecked(False)
-            toggle_model = QtGui.QStandardItemModel()
-            self.toggle_listview.setModel(toggle_model)
+#        self.toggle_listview.setEnabled(value)
+#        if self.current_widget:
+#            if not isinstance(self.current_widget['widget'], QtGui.QPushButton):
+#                for button in self.convert_group.buttons():
+#                    button.setEnabled(False)
+#                self.convert_chk.setEnabled(False)
+#                self.convert_chk.setChecked(False)
+#    #            self.toggle_chk.setEnabled(False)
+#    #            self.toggle_chk.setChecked(False)
+#                toggle_model = QtGui.QStandardItemModel()
+#                self.toggle_listview.setModel(toggle_model)
+#            else:
+#                pass
         if value:
             self.toggle_range_check()
+        else:
+            self.toggle_listview.setEnabled(False)
+            self.range_min_spin.setEnabled(False)
+            self.range_max_spin.setEnabled(False)
+            self.range_combo.setEnabled(False)
+            self.range_min_lbl.setEnabled(False)
+            self.range_max_lbl.setEnabled(False)
+            self.range_scale_lbl.setEnabled(False)
+#            self.force_ctrl_frame.setEnabled(False)
+            self.force_ctrl_frame.setVisible(False)
+#            self.force_note_frame.setEnabled(False)
+            self.force_note_frame.setVisible(False)
 
     def chan_reset(self):
         self.chan_spin.setValue(0)
@@ -525,7 +615,7 @@ class EditorWin(QtGui.QMainWindow):
         echan_lbl = QtGui.QLabel('Channel', self.statusbar)
         echan_edit = QtGui.QLabel('', self.statusbar)
         echan_edit.setFixedWidth(12)
-        eext_lbl = QtGui.QLabel('Extension', self.statusbar)
+        eext_lbl = QtGui.QLabel('Range', self.statusbar)
         eext_edit = QtGui.QLabel('', self.statusbar)
         eext_edit.setFixedWidth(48)
         emode_lbl = QtGui.QLabel('Mode', self.statusbar)
@@ -572,7 +662,7 @@ class EditorWin(QtGui.QMainWindow):
     def widget_save(self, template=None):
         if not self.current_widget:
             return
-        if not template:
+        if template is None:
             template = self.main.template
         widget = self.current_widget.get('widget')
         enabled = self.current_widget.get('enabled', True)
@@ -580,11 +670,22 @@ class EditorWin(QtGui.QMainWindow):
         text = self.current_widget.get('text', '')
         self.current_widget['chan'] = self.chan_spin.value()
         convert = self.convert_group.checkedButton().id
-        #TODO: not important: consider remembering the state, even if disabled
         if self.convert_chk.isChecked():
-            self.current_widget['convert'] = convert
-        elif self.current_widget.get('convert'):
-            self.current_widget.pop('convert')
+            self.current_widget['convert'] = True
+        else:
+            self.current_widget['convert'] = False
+        self.current_widget['convert_type'] = convert
+        if self.convert_ctrl_radio.isChecked():
+            self.current_widget['convert_values'] = self.force_ctrl_spin.value()
+        else:
+            if self.force_note_change_radio.isChecked():
+                self.current_widget['convert_values'] = (None, self.force_vel_spin.value())
+            else:
+                if self.force_note_combo.currentIndex() == 0:
+                    note = None
+                else:
+                    note = self.force_note_combo.currentIndex()-1
+                self.current_widget['convert_values'] = (note, self.force_vel_spin.value())
 
         patch = self.current_widget.get('patch')
         if text is not None:
@@ -602,9 +703,7 @@ class EditorWin(QtGui.QMainWindow):
         led_index = self.led_combo.currentIndex()
         if led_index > 0:
             led_item = self.ledlist_model.item(led_index)
-            if led_item.led == 0:
-                self.current_widget['led'] = False
-            elif led_item.led == widget.siblingLed:
+            if led_item.led == widget.siblingLed:
                 self.current_widget['led'] = True
             led_basevalue = int(str(self.led_base_combo.currentText()), 0)
             if led_basevalue == 0:
@@ -628,6 +727,12 @@ class EditorWin(QtGui.QMainWindow):
         toggle_model = self.current_widget.get('toggle_model')
         if toggle_model:
             self.current_widget['toggle_values'] = tuple([int(toggle_model.item(i).text()) for i in range(toggle_model.rowCount())])
+        vrange = self.current_widget.get('range')
+        if vrange:
+            range_start = self.range_min_spin.value()
+            range_end = self.range_max_spin.value()
+            range_type = self.range_combo.currentIndex()
+            self.current_widget['range_values'] = range_start, range_end, range_type
 
         self.main.conf_dict[template][widget] = self.current_widget
         self.widgetSaved.emit(template)
@@ -673,6 +778,12 @@ class EditorWin(QtGui.QMainWindow):
                     self.led_action_combo.setModelColumn(0)
                     self.led_action_combo.setCurrentIndex(1)
             #other values stuff to reset
+            self.toggle_chk.setChecked(False)
+            toggle_model = QtGui.QStandardItemModel()
+            self.toggle_listview.setModel(toggle_model)
+            self.range_chk.setChecked(False)
+            self.convert_chk.setChecked(False)
+            self.convert_ctrl_radio.setChecked(True)
             return
 
         widget_dict['widget'] = widget
@@ -705,16 +816,32 @@ class EditorWin(QtGui.QMainWindow):
             self.chan_spin.setValue(chan)
 
         #Convert event type
-        convert = widget_dict.get('convert')
-        if convert == None:
-            self.convert_chk.setChecked(False)
+        convert = widget_dict.get('convert', False)
+        if isinstance(convert, bool):
+            convert_type = widget_dict.get('convert_type', ToCtrl)
+        else:
+            convert_type = convert
+        if convert == False:
             self.convert_ctrl_radio.setChecked(True)
+            self.convert_chk.setChecked(False)
         else:
             self.convert_chk.setChecked(True)
-            if convert == ToCtrl:
-                self.convert_ctrl_radio.setChecked(True)
+        if convert_type == ToCtrl:
+            self.convert_ctrl_radio.setChecked(True)
+            self.force_ctrl_spin.setValue(widget_dict.get('convert_values', 0))
+            self.force_note_change_radio.setChecked(True)
+            self.force_note_combo.setCurrentIndex(0)
+            self.force_vel_spin.setValue(127)
+        else:
+            self.convert_note_radio.setChecked(True)
+            convert_note, convert_vel = widget_dict.get('convert_values', (None, 0))
+            if convert_note is None:
+                self.force_note_change_radio.setChecked(True)
+                self.force_note_combo.setCurrentIndex(0)
             else:
-                self.convert_note_radio.setChecked(True)
+                self.force_note_combo.setCurrentIndex(convert_note+1)
+            self.force_vel_spin.setValue(convert_vel)
+            self.force_ctrl_spin.setValue(0)
 
         #Patch
         patch = widget_dict.get('patch')
@@ -730,6 +857,7 @@ class EditorWin(QtGui.QMainWindow):
 
         #LED
         led = widget_dict.get('led', True)
+        print led
         self.led_combo.blockSignals(True)
         if led == None or (isinstance(led, bool) and led == False):
             self.led_combo.setCurrentIndex(0)
@@ -816,7 +944,15 @@ class EditorWin(QtGui.QMainWindow):
         else:
             self.led_action_combo.lineEdit().setText(led_action)
 
-        #Toggle
+        #Toggle and Range
+        vrange = self.current_widget.get('range', False)
+        self.range_chk.setChecked(vrange)
+        range_start, range_end, range_type = self.current_widget.get('range_values', (0, 127, 0))
+        self.range_min_spin.setValue(range_start)
+        self.range_max_spin.setValue(range_end)
+        self.range_combo.setCurrentIndex(range_type)
+        self.range_combo.setEnabled(True if vrange and not isinstance(widget, QtGui.QPushButton) else False)
+        self.range_scale_lbl.setEnabled(True if vrange and not isinstance(widget, QtGui.QPushButton) else False)
         if not isinstance(widget, QtGui.QPushButton):
             self.toggle_chk.setChecked(False)
             self.toggle_chk.setEnabled(False)
@@ -828,6 +964,7 @@ class EditorWin(QtGui.QMainWindow):
                 self.toggle_chk.setChecked(True)
             else:
                 self.toggle_chk.setChecked(False)
+                self.toggle_listview.setEnabled(False)
             toggle_model = self.current_widget.get('toggle_model')
             if not toggle_model:
                 toggle_values = self.current_widget.get('toggle_values')
@@ -856,3 +993,12 @@ class EditorWin(QtGui.QMainWindow):
             self.patch_edit.setStyleSheet('color: gray')
             self.patch_edit.setPlainText('Pass')
             self.patch_edit.blockSignals(False)
+
+    def piano_show(self):
+        key = self.force_note_combo.currentIndex()
+        res = self.piano.exec_(key-1 if key > 0 else None)
+        if res > 0:
+            self.force_note_combo.setCurrentIndex(res)
+
+
+

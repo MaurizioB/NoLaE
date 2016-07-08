@@ -61,14 +61,14 @@ class SignalClass(object):
                 self.led = widget.siblingLed
             else:
                 self.led = None
-        elif led is False:
+        elif isinstance(led, bool) and led == False:
             self.led = None
         else:
             self.led = led
             widget.siblingLed = led
         
 #        self.led_basevalue = led_basevalue
-        if self.led:
+        if self.led is not None:
             self.led_setup(led_basevalue)
         else:
             self.led_state = self.led_basevalue = 0
@@ -116,7 +116,7 @@ class SignalClass(object):
         pass
 
     def led_assign(self, action):
-        if not self.led:
+        if self.led is None:
             self.led_action = self.led_ignore_action
             return
         if action == Pass:
@@ -279,3 +279,93 @@ class MyToolTip(QtGui.QWidget):
         self.move(center-self.width()/2, parent.y()-10)
         self.setStyleSheet('background-color: rgba(210,210,210,210); border: 1px solid gray;')
         self.raise_()
+
+class PianoKey(QtGui.QWidget):
+    def __init__(self, parent, id):
+        QtGui.QWidget.__init__(self, parent)
+        self.id = id
+        self.name = md.util.note_name(id)
+        self.black = True if self.name[1]=='#' else False
+        self.octave, self.note = divmod(id, 12)
+        self.hover_color = QtCore.Qt.red
+        if self.black:
+            self.color = QtCore.Qt.black
+            self.setMinimumSize(7, 24)
+            self.setMaximumSize(7, 24)
+            if (self.note & 1) == 1:
+                self.move(self.octave*7*10+self.note/2*10+7, 0)
+            else:
+                self.move(self.octave*7*10+(self.note+1)/2*10+7, 0)
+        else:
+            if self.id < 21 or self.id > 108:
+                self.color = QtCore.Qt.gray
+            elif self.id < 36 or self.id > 96:
+                self.color = QtGui.QColor(220, 220, 220)
+            elif self.id == 60:
+                self.color = QtGui.QColor(230, 230, 230)
+            else:
+                self.color = QtCore.Qt.white
+            self.setMinimumSize(10, 48)
+            self.setMaximumSize(10, 48)
+            if (self.note & 1) == 0:
+                self.move(self.octave*7*10+self.note/2*10, 0)
+            else:
+                self.move(self.octave*7*10+(self.note+1)/2*10, 0)
+            self.lower()
+        self._color = self.color
+        self.current_color = self.color
+
+    def showEvent(self, event):
+        self.update()
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter()
+        qp.begin(self)
+        self.draw_key(qp)
+        qp.end()
+
+    def draw_key(self, qp):
+        qp.setPen(QtGui.QPen(QtCore.Qt.black, 0.5, QtCore.Qt.SolidLine))
+        qp.setBrush(self.current_color)
+        qp.drawRect(0, 0, self.width(), self.height())
+
+    def mouseReleaseEvent(self, event):
+        self.parent().done(self.id+1)
+
+    def enterEvent(self, event):
+        self.current_color = self.hover_color
+        self.update()
+
+    def leaveEvent(self, event):
+        self.current_color = self.color
+        self.update()
+
+class Piano(QtGui.QDialog):
+    def __init__(self, parent):
+        QtGui.QDialog.__init__(self, parent)
+        self.setWindowTitle('Note selector')
+        self.keys = []
+        self.highlight = None
+        for i in range(128):
+            key = PianoKey(self, i)
+            self.keys.append(key)
+        self.setMinimumHeight(key.height())
+        self.setMinimumWidth(key.width()*75)
+
+    def exec_(self, highlight=None):
+        if self.highlight:
+            key = self.keys[self.highlight]
+            key.current_color = key.color = key._color
+            key.repaint()
+            key.update()
+        if highlight:
+            self.highlight = highlight
+            key = self.keys[self.highlight]
+            key.current_color = key.color = QtGui.QColor(255, 150, 150)
+            key.repaint()
+            key.update()
+        else:
+            self.highlight = None
+        return QtGui.QDialog.exec_(self)
+
+

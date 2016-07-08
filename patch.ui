@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>473</width>
-    <height>385</height>
+    <width>550</width>
+    <height>557</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -294,7 +294,7 @@
        <string>Event modifiers</string>
       </property>
       <layout class="QGridLayout" name="gridLayout_3">
-       <item row="1" column="0">
+       <item row="2" column="0">
         <layout class="QHBoxLayout" name="convert_hbox">
          <item>
           <widget class="QCheckBox" name="convert_chk">
@@ -302,42 +302,10 @@
             <bool>false</bool>
            </property>
            <property name="text">
-            <string>Force to:</string>
+            <string>Force incoming event</string>
            </property>
            <attribute name="buttonGroup">
             <string notr="true">tool_group</string>
-           </attribute>
-          </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="convert_ctrl_radio">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string>Ctrl</string>
-           </property>
-           <property name="checkable">
-            <bool>true</bool>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-           <attribute name="buttonGroup">
-            <string notr="true">convert_group</string>
-           </attribute>
-          </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="convert_note_radio">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string>Note</string>
-           </property>
-           <attribute name="buttonGroup">
-            <string notr="true">convert_group</string>
            </attribute>
           </widget>
          </item>
@@ -356,6 +324,129 @@
             </size>
            </property>
           </spacer>
+         </item>
+        </layout>
+       </item>
+       <item row="1" column="0">
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QCheckBox" name="range_chk">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Range</string>
+           </property>
+           <attribute name="buttonGroup">
+            <string notr="true">tool_group</string>
+           </attribute>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="range_min_lbl">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>min</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="range_min_spin">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="maximum">
+            <number>127</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="range_max_lbl">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>max</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="range_max_spin">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="maximum">
+            <number>127</number>
+           </property>
+           <property name="value">
+            <number>127</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="range_scale_lbl">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>mode</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="range_combo">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <item>
+            <property name="text">
+             <string>Equal</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Single min</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Single max</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Single ends</string>
+            </property>
+           </item>
+          </widget>
          </item>
         </layout>
        </item>
@@ -473,6 +564,197 @@
          </item>
         </layout>
        </item>
+       <item row="3" column="0">
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <widget class="QFrame" name="force_ctrl_frame">
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Sunken</enum>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_4">
+            <item row="2" column="1">
+             <widget class="QSpinBox" name="force_ctrl_spin"/>
+            </item>
+            <item row="0" column="0">
+             <widget class="QRadioButton" name="convert_ctrl_radio">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Ctrl</string>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">convert_group</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="force_ctrl_lbl">
+              <property name="text">
+               <string>ID:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0" colspan="2">
+             <widget class="Line" name="force_ctrl_line">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0" colspan="2">
+             <spacer name="force_ctrl_spacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Minimum</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>10</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QFrame" name="force_note_frame">
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Sunken</enum>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_5">
+            <item row="0" column="3" colspan="2">
+             <widget class="QCheckBox" name="force_note_toggle_chk">
+              <property name="text">
+               <string>Toggle note ON/OFF</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="force_note_lbl">
+              <property name="text">
+               <string>Note</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="3">
+             <widget class="QLabel" name="force_vel_lbl">
+              <property name="text">
+               <string>Velocity</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="4">
+             <widget class="QSpinBox" name="force_vel_spin">
+              <property name="specialValueText">
+               <string>source</string>
+              </property>
+              <property name="minimum">
+               <number>0</number>
+              </property>
+              <property name="maximum">
+               <number>127</number>
+              </property>
+              <property name="value">
+               <number>127</number>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QComboBox" name="force_note_combo"/>
+            </item>
+            <item row="1" column="0" colspan="5">
+             <widget class="Line" name="force_note_line">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="4">
+             <widget class="QRadioButton" name="force_vel_change_radio">
+              <property name="text">
+               <string>velocity</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">convert_note_group</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="2" column="3">
+             <widget class="QRadioButton" name="force_note_change_radio">
+              <property name="text">
+               <string>note</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">convert_note_group</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="3" column="2">
+             <widget class="QPushButton" name="convert_piano_btn">
+              <property name="maximumSize">
+               <size>
+                <width>20</width>
+                <height>18</height>
+               </size>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset>
+                <normalon>:/icons/smallpiano.png</normalon>
+               </iconset>
+              </property>
+              <property name="flat">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0" colspan="3">
+             <widget class="QLabel" name="force_note_event_lbl">
+              <property name="text">
+               <string>Incoming event value change:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0" colspan="3">
+             <widget class="QRadioButton" name="convert_note_radio">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Note</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">convert_group</string>
+              </attribute>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </item>
       </layout>
      </widget>
     </item>
@@ -483,7 +765,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>473</width>
+     <width>550</width>
      <height>17</height>
     </rect>
    </property>
@@ -501,5 +783,6 @@
     <bool>false</bool>
    </property>
   </buttongroup>
+  <buttongroup name="convert_note_group"/>
  </buttongroups>
 </ui>

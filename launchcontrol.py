@@ -3,6 +3,7 @@
 
 import sys, argparse
 import mididings as md
+from mididings import extra as mdx
 from collections import OrderedDict, namedtuple
 from copy import copy
 from os.path import basename as path_basename
@@ -13,7 +14,7 @@ from const import *
 from utils import *
 from classes import *
 
-version = 0.5
+version = 0.8
 prog_name = 'NoLaE'
 description = 'A Novation LaunchControl mapper and filter'
 backend = 'alsa'
@@ -100,6 +101,10 @@ class Win(QtGui.QMainWindow):
 #            self.template_connect(mode)
         else:
 #            self.conf_dict = {}
+            saveAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_DialogSaveButton), '&Save config', self)
+            saveAction.setShortcut('Ctrl+S')
+            saveAction.triggered.connect(self.config_write)
+            self.file_menu.addAction(saveAction)
             self.template_clipboard = None
             self.template_clipcut = False
             rename_action = QtGui.QAction('Rename', self)
@@ -357,7 +362,7 @@ class Win(QtGui.QMainWindow):
         self.temp_id_group.button(item.id).setChecked(True)
 
     def template_rename_dialog(self, template=True):
-        if isinstance(template, int):
+        if not isinstance(template, bool):
             default_text = self.template_list[template].name
         elif template == True:
             template = self.template
@@ -366,6 +371,7 @@ class Win(QtGui.QMainWindow):
             item = self.template_model.itemFromIndex(self.template_listview.currentIndex())
             template = item.id
             default_text = item.text()
+        print template
         template_name, res = QtGui.QInputDialog.getText(self, 'Template Name', 'Enter template name', QtGui.QLineEdit.Normal, default_text)
         if res:
             self.templateRenamed.emit(template, str(template_name.toLatin1()))
@@ -1290,6 +1296,7 @@ class Win(QtGui.QMainWindow):
             for event, (widget, ext, mode) in self.map_dict[template].items():
                 if not widget in config_dict:
                     continue
+                event_chan, event_type, event_id = event
                 patch_data = config_dict[widget]
                 ext = (0, 127) if ext==True else (ext[0], ext[1])
                 dest = patch_data.get('dest', 1)
@@ -1298,38 +1305,97 @@ class Win(QtGui.QMainWindow):
                 elif len(out_ports) and dest > len(out_ports):
                     dest = len(out_ports)
                 chan = patch_data.get('chan')
-                convert = patch_data.get('convert')
                 toggle = patch_data.get('toggle')
+                pre_patch = None
                 if toggle:
                     toggle_range = MyCycle(patch_data.get('toggle_values', (0, 127)))
                     toggle_patch = md.Process(lambda ev,  cycle=toggle_range: md.event.MidiEvent(ev.type, ev.port, ev.channel, ev.data1, cycle.next()))
-                    #TODO finire qui, implementare nell'editor la modalità?
-                    if event[1] == md.CTRL:
-                        if convert == ToNote:
-                            #TODO: AAAh. Ragiona bene su come implementare il convert
-                            pass
-                        toggle_patch = md.CtrlValueFilter(ext[1]) >> toggle_patch
+                    if mode == Toggle:
+                        pre_patch = toggle_patch
+                    elif event_type == md.CTRL:
+                        pre_patch = md.CtrlValueFilter(ext[1]) >> toggle_patch
                     else:
-                        toggle_patch = md.Filter(md.NOTEON) >> toggle_patch
+                        pre_patch = md.Filter(md.NOTEON) >> toggle_patch
+                vrange = patch_data.get('range')
+                if vrange and not pre_patch:
+                    range_start, range_end, range_type = patch_data.get('range_values', (0, 127, 0))
+                    if isinstance(widget, QtGui.QPushButton):
+                        if event_type == md.CTRL:
+                            pre_patch = [md.CtrlValueFilter(ext[0]) >> Ctrl(event_id, range_start), md.CtrlValueFilter(ext[1]) >> Ctrl(event_id, range_end)]
+                        else:
+                            pre_patch = md.KeyFilter(event_id) >> [md.Filter(md.NOTEOFF) >> md.NoteOff(event_id, range_start),
+                                                                      md.Filter(md.NOTEON) >> md.NoteOn(event_id, range_end)]
+                    else:
+                        if range_type == 0:
+                            pre_patch = md.CtrlRange(event_id, range_start, range_end, ext[0], ext[1]+1-(ext[1]+1)/(range_end-range_start+1))
+                        elif range_type == 1:
+                            pre_patch = md.CtrlRange(event_id, range_end, range_start, ext[0], ext[1]) >> md.CtrlRange(event_id, range_end, range_start, range_start, range_end)
+                        elif range_type == 2:
+                            pre_patch = md.CtrlRange(event_id, range_start, range_end, ext[0], ext[1])
+                        else:
+                            pre_patch = [md.CtrlValueFilter(ext[0]) >> md.Ctrl(event_id, range_start),
+                                            -md.CtrlValueFilter(ext[0]) >> md.CtrlRange(event_id, range_start, range_end, ext[0]+1, ext[1])]
+
+                convert = patch_data.get('convert')
+                conv_patch = None
+                if convert:
+                    if convert == ToCtrl:
+                        ctrl_id = patch_data.get('convert_values', event_id)
+                        if (event_type == md.CTRL and event_id != ctrl_id) or event_type == md.NOTE:
+                            conv_patch = md.Ctrl(ctrl_id, md.EVENT_DATA2)
+                    else:
+                        convert_note, convert_vel = patch_data.get('convert_values', (None, 0))
+                        if convert_note is None:
+                            if event_type == md.NOTE:
+                                conv_patch = [md.Filter(md.NOTEOFF) >> md.NoteOff(md.EVENT_NOTE),
+                                                          md.Filter(md.NOTEON) >> md.NoteOn(md.EVENT_NOTE, convert_vel if convert_vel > 0 else md.EVENT_VELOCITY)]
+                            else:
+                                if vrange:
+                                    start = range_start
+                                elif toggle:
+                                    start = 0
+                                else:
+                                    start = ext[0]
+                                conv_patch = [md.CtrlValueFilter(start) >> md.NoteOff(md.EVENT_VALUE, convert_vel), 
+                                              -md.CtrlValueFilter(start) >> md.NoteOn(md.EVENT_VALUE, convert_vel)] >> mdx.MakeMonophonic()
+                        else:
+                            if event_type == md.NOTE:
+                                conv_patch = [md.Filter(md.NOTEOFF) >> md.NoteOff(convert_note),
+                                                          md.Filter(md.NOTEON) >> md.NoteOn(convert_note, convert_vel if convert_vel > 0 else md.EVENT_VELOCITY)]
+                            else:
+                                if vrange:
+                                    start = range_start
+                                elif toggle:
+                                    start = 0
+                                else:
+                                    start = ext[0]
+                                conv_patch = [md.CtrlValueFilter(start) >> md.NoteOff(convert_note, md.EVENT_VALUE), 
+                                              -md.CtrlValueFilter(start) >> md.NoteOn(convert_note, md.EVENT_VALUE)]
+                if pre_patch:
+                    if conv_patch:
+                        pre_patch = pre_patch >> conv_patch
+                elif conv_patch:
+                    pre_patch = conv_patch
+
                 patch = patch_data.get('patch')
                 if not patch:
-                    if not toggle:
-                        if not chan or event[0] == chan:
+                    if not pre_patch:
+                        if not chan or event_chan == chan:
                             patch = md.Pass()
                         else:
                             patch = md.Channel(chan)
                     else:
-                        if chan and not event[0] == chan:
-                            patch = md.Channel(chan) >> toggle_patch
+                        if chan and not event_chan == chan:
+                            patch = md.Channel(chan) >> pre_patch
                         else:
-                            patch = toggle_patch
+                            patch = pre_patch
                 else:
                     for rep in md_replace:
                         patch = patch.replace(rep, 'md.'+rep)
                     patch = eval(patch)
-                    if toggle:
-                        patch = toggle_patch >> patch
-                    if chan and not event[0] == chan:
+                    if pre_patch:
+                        patch = pre_patch >> patch
+                    if chan and not event_chan == chan:
                         patch = md.Channel(chan) >> patch
                 text = patch_data.get('text')
                 led = patch_data.get('led', True)
@@ -1423,7 +1489,7 @@ class Win(QtGui.QMainWindow):
             #TODO: implement name inside TemplateClass
             template_id = self.template_list[template].name
             scenes[template+1] = md.Scene('{} template {}'.format(*template_str(template)) if isinstance(template_id, int) else 'Template {}'.format(template_id), template_scene)
-#            print template_scene
+            print template_scene
         self.map_dict = temp_map_dict
         return scenes, out_ports
 
@@ -1566,7 +1632,7 @@ class Win(QtGui.QMainWindow):
                 widget.setVisible(False)
                 widget.siblingLabel.setVisible(False)
                 continue
-            if signal.led:
+            if signal.led is not None:
                 led_list.append((signal.led, signal.led_basevalue))
             if signal.text:
                 widget.siblingLabel.setText(signal.text)
@@ -2273,9 +2339,19 @@ class Win(QtGui.QMainWindow):
         save_file = QtGui.QFileDialog.getSaveFileName(self, 'Save config to file', self.config if self.config else '', 'LaunchPad config (*.nlc)')
         if not save_file:
             return
-        save_file = str(save_file)
-        conf_dict = OrderedDict()
+        self.config_write(str(save_file))
 
+
+    def config_write(self, save_file=None):
+        if self.config:
+            save_file = self.config
+        elif not save_file:
+            self.editor_win.widget_save(self.template)
+            save_file = QtGui.QFileDialog.getSaveFileName(self, 'Save config to file', self.config if self.config else '', 'LaunchPad config (*.nlc)')
+            if not save_file:
+                return
+            save_file = str(save_file)
+        conf_dict = OrderedDict()
         output_list = []
         for id in range(self.output_model.rowCount()):
             output_item = self.output_model.item(id)
@@ -2331,7 +2407,16 @@ class Win(QtGui.QMainWindow):
                             if v == 0:
                                 widget_data.pop('chan')
                         elif k == 'convert':
-                            pass
+                            if v != True:
+                                widget_data.pop('convert')
+                                try:
+                                    widget_data.pop('convert_type')
+                                    widget_data.pop('convert_values')
+                                except:
+                                    pass
+                            else:
+                                convert_type = widget_data.get('convert_type', ToCtrl)
+                                widget_data['convert'] = convert_type
                         elif k == 'led':
                             if v == True:
                                 widget_data.pop('led')
@@ -2361,7 +2446,7 @@ class Win(QtGui.QMainWindow):
         dict_str += '}'
         with open(save_file, 'w') as fo:
             fo.write(dict_str)
-        self.setWindowTitle('{} - Editor {}'.format(prog_name, path_basename(save_file)))
+        self.setWindowTitle('{} - Editor ({})'.format(prog_name, path_basename(save_file)))
         self.config = save_file
 
     def closeEvent(self, event):
