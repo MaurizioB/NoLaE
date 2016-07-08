@@ -5,6 +5,7 @@ from collections import namedtuple
 from const import *
 from classes import *
 from utils import *
+from parsers import *
 
 TPatch = namedtuple('TPatch', 'label patch input')
 TPatch.__new__.__defaults__ = (None, ) * len(TPatch._fields)
@@ -585,14 +586,15 @@ class EditorWin(QtGui.QMainWindow):
         patch = str(self.patch_edit.toPlainText().toLatin1())
         self.current_widget['patch'] = patch
         if len(patch):
-            patch_format = patch
-            for rep in md_replace:
-                patch_format = patch_format.replace(rep, 'md.'+rep)
-            try:
-                eval(patch_format)
-                self.patch_edit.valid = True
-            except:
-                self.patch_edit.valid = False
+            self.patch_edit.valid = patch_validate(patch)
+#            patch_format = patch
+#            for rep in md_replace:
+#                patch_format = patch_format.replace(rep, 'md.'+rep)
+#            try:
+#                eval(patch_format)
+#                self.patch_edit.valid = True
+#            except:
+#                self.patch_edit.valid = False
         else:
             self.patch_edit.valid = True
         self.patch_edit.setStyleSheet('color: {}'.format(patch_colors[self.patch_edit.valid][self.enable_chk.isChecked()]))

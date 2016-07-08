@@ -30,7 +30,7 @@ row_heights = {0: 80, 1: 80, 2: 80, 3: 160, 4: 40, 5: 40}
 str_allowed = set(string.ascii_letters+string.digits+'.'+' ')
 
 #TODO Split is missing, update function with regex
-md_replace = ('Ctrl', 'Port', 'Channel', 'Velocity', 
+md_replace = ('Ctrl', 'Port', 'Channel', 'Velocity', 'SysEx', 
            'Note', 'Pitchbend', 'Aftertouch', 'Program', 'Generator', 
            'event.MidiEvent', 'event.SysExEvent', 
            'extra.Harmonize', 'LimitPolyphony', 'MakeMonophonic', 'LatchNotes', 'Panic', 

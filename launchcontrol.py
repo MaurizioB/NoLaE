@@ -13,6 +13,7 @@ import icons
 from const import *
 from utils import *
 from classes import *
+from parsers import *
 
 version = 0.8
 prog_name = 'NoLaE'
@@ -1262,7 +1263,7 @@ class Win(QtGui.QMainWindow):
             with open(self.config, 'rb') as cf:
                 config_raw = eval(cf.read().replace('\n', ''))
         except:
-            print 'PD!'
+            print 'PDs!'
         config = {}
         self.template_groups = [[] for i in range(16)]
         self.template_list = [TemplateClass(self, i) for i in range(16)]
@@ -1321,7 +1322,7 @@ class Win(QtGui.QMainWindow):
                     range_start, range_end, range_type = patch_data.get('range_values', (0, 127, 0))
                     if isinstance(widget, QtGui.QPushButton):
                         if event_type == md.CTRL:
-                            pre_patch = [md.CtrlValueFilter(ext[0]) >> Ctrl(event_id, range_start), md.CtrlValueFilter(ext[1]) >> Ctrl(event_id, range_end)]
+                            pre_patch = [md.CtrlValueFilter(ext[0]) >> md.Ctrl(event_id, range_start), md.CtrlValueFilter(ext[1]) >> md.Ctrl(event_id, range_end)]
                         else:
                             pre_patch = md.KeyFilter(event_id) >> [md.Filter(md.NOTEOFF) >> md.NoteOff(event_id, range_start),
                                                                       md.Filter(md.NOTEON) >> md.NoteOn(event_id, range_end)]
@@ -1390,12 +1391,13 @@ class Win(QtGui.QMainWindow):
                         else:
                             patch = pre_patch
                 else:
-                    for rep in md_replace:
-                        patch = patch.replace(rep, 'md.'+rep)
-                    patch = eval(patch)
+#                    for rep in md_replace:
+#                        patch = patch.replace(rep, 'md.'+rep)
+#                    patch = eval(patch)
+                    patch = patch_parse(patch, event, template, len(out_ports))
                     if pre_patch:
                         patch = pre_patch >> patch
-                    if chan and not event_chan == chan:
+                    if chan is not None and not event_chan == chan:
                         patch = md.Channel(chan) >> patch
                 text = patch_data.get('text')
                 led = patch_data.get('led', True)
@@ -1489,7 +1491,7 @@ class Win(QtGui.QMainWindow):
             #TODO: implement name inside TemplateClass
             template_id = self.template_list[template].name
             scenes[template+1] = md.Scene('{} template {}'.format(*template_str(template)) if isinstance(template_id, int) else 'Template {}'.format(template_id), template_scene)
-            print template_scene
+#            print template_scene
         self.map_dict = temp_map_dict
         return scenes, out_ports
 
