@@ -216,7 +216,7 @@ doesn't shut down correctly. While using ALSA this shouldn't be a major problem,
 it might be if you use JACK. Check your patchbay for the NoLaE client, if it's
 still there you should try to kill its process before running it again,
 otherwise JACK could even crash.
-- A graphical fixed layout has been used, so it might look ugly when using a
+- A fixed graphical layout has been used, so it might look ugly when using a
 non standard Qt theme.
 - Default values in the editor window do not always set
 - The patch syntax checking system is not very reliable, you could type any

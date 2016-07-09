@@ -5,7 +5,6 @@ from collections import namedtuple
 from const import *
 from classes import *
 from utils import *
-from parsers import *
 
 TPatch = namedtuple('TPatch', 'label patch input')
 TPatch.__new__.__defaults__ = (None, ) * len(TPatch._fields)
@@ -54,11 +53,19 @@ class EditorWin(QtGui.QMainWindow):
         self.chan_reset_btn.clicked.connect(self.chan_reset)
         self.convert_ctrl_radio.toggled.connect(self.convert_group_toggle)
         self.convert_note_radio.toggled.connect(self.convert_group_toggle)
+        self.convert_sysex_radio.toggled.connect(self.convert_group_toggle)
         self.force_note_change_radio.toggled.connect(self.force_note_change_toggle)
         self.convert_piano_btn.clicked.connect(self.piano_show)
+        self.force_sysex_btn.clicked.connect(self.sysex_input)
+        self.force_sysex_listview.edit = self.sysex_edit
+        self.force_sysex_listview.closeEditor = self.sysex_validate
+        self.force_sysex_spin.valueChanged.connect(self.sysex_highlight)
 
         self.convert_ctrl_radio.id = ToCtrl
         self.convert_note_radio.id = ToNote
+        self.convert_sysex_radio.id = ToSysEx
+        self.sysex_create()
+
         self.current_widget = None
         self.output_update()
         self.models_setup()
@@ -73,6 +80,8 @@ class EditorWin(QtGui.QMainWindow):
 
         self.piano = Piano(self)
         self.piano.setModal(True)
+        self.sysex_dialog = SysExDialog(self)
+        self.sysex_dialog.setModal(True)
 
     def toggle_chk_wheelEvent(self, event):
         if event.orientation() == QtCore.Qt.Vertical:
@@ -165,44 +174,121 @@ class EditorWin(QtGui.QMainWindow):
         for button in self.convert_group.buttons():
             button.setEnabled(value)
         self.force_note_frame.setVisible(value)
+        self.force_sysex_frame.setVisible(value)
         self.force_ctrl_frame.setVisible(value)
         if self.convert_ctrl_radio.isChecked():
             ctrl = True
+            note = sysex = False
+        elif self.convert_note_radio.isChecked():
+            note = True
+            ctrl = sysex = False
         else:
-            ctrl = False
+            sysex = True
+            note = ctrl = False
         self.force_ctrl_lbl.setEnabled(ctrl)
         self.force_ctrl_spin.setEnabled(ctrl)
-        self.force_note_toggle_chk.setEnabled(not ctrl)
-        self.force_note_event_lbl.setEnabled(not ctrl)
-        self.force_note_change_radio.setEnabled(not ctrl)
-        self.force_vel_change_radio.setEnabled(not ctrl)
-        self.force_note_lbl.setEnabled(not ctrl)
-        self.force_note_combo.setEnabled(True if (not ctrl and self.force_vel_change_radio.isChecked()) else False)
-        self.convert_piano_btn.setEnabled(not ctrl)
-        self.force_vel_lbl.setEnabled(not ctrl)
-        self.force_vel_spin.setEnabled(not ctrl)
+        self.force_note_toggle_chk.setEnabled(note)
+        self.force_note_event_lbl.setEnabled(note)
+        self.force_note_change_radio.setEnabled(note)
+        self.force_vel_change_radio.setEnabled(note)
+        self.force_note_lbl.setEnabled(note)
+        self.force_note_combo.setEnabled(True if (note and self.force_vel_change_radio.isChecked()) else False)
+        self.convert_piano_btn.setEnabled(note)
+        self.force_vel_lbl.setEnabled(note)
+        self.force_vel_spin.setEnabled(note)
+        self.force_sysex_listview.setEnabled(sysex)
+        self.force_sysex_btn.setEnabled(sysex)
+        self.force_sysex_lbl.setEnabled(sysex)
+        self.force_sysex_spin.setEnabled(sysex)
 
     def convert_group_toggle(self, value):
         if not value:
             return
         if self.sender() == self.convert_ctrl_radio:
             ctrl = True
+            note = sysex = False
+        elif self.sender() == self.convert_note_radio:
+            note = True
+            ctrl = sysex = False
         else:
-            ctrl = False
+            sysex = True
+            note = ctrl = False
         self.force_ctrl_lbl.setEnabled(ctrl)
         self.force_ctrl_spin.setEnabled(ctrl)
-        self.force_note_toggle_chk.setEnabled(not ctrl)
-        self.force_note_event_lbl.setEnabled(not ctrl)
-        self.force_note_change_radio.setEnabled(not ctrl)
-        self.force_vel_change_radio.setEnabled(not ctrl)
-        self.force_note_lbl.setEnabled(not ctrl)
-        self.force_note_combo.setEnabled(True if (not ctrl and self.force_vel_change_radio.isChecked()) else False)
-        self.convert_piano_btn.setEnabled(not ctrl)
-        self.force_vel_lbl.setEnabled(not ctrl)
-        self.force_vel_spin.setEnabled(not ctrl)
+        self.force_note_toggle_chk.setEnabled(note)
+        self.force_note_event_lbl.setEnabled(note)
+        self.force_note_change_radio.setEnabled(note)
+        self.force_vel_change_radio.setEnabled(note)
+        self.force_note_lbl.setEnabled(note)
+        self.force_note_combo.setEnabled(True if (note and self.force_vel_change_radio.isChecked()) else False)
+        self.convert_piano_btn.setEnabled(note)
+        self.force_vel_lbl.setEnabled(note)
+        self.force_vel_spin.setEnabled(note)
+        self.force_sysex_listview.setEnabled(sysex)
+        self.force_sysex_btn.setEnabled(sysex)
+        self.force_sysex_lbl.setEnabled(sysex)
+        self.force_sysex_spin.setEnabled(sysex)
 
     def force_note_change_toggle(self, value):
         self.force_note_combo.setEnabled(not value)
+
+    def sysex_create(self, values=None):
+        self.sysex_model = QtGui.QStandardItemModel()
+        if not values:
+            for sysex in ['F0', '00', 'F7']:
+                item = QtGui.QStandardItem(sysex)
+                self.sysex_model.appendRow(item)
+        else:
+            if values[0] != 0xf0 or len(values) < 2:
+                item = QtGui.QStandardItem('F0')
+                self.sysex_model.appendRow(item)
+            for byte in values:
+                item = QtGui.QStandardItem('{:02X}'.format(byte))
+                item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable)
+                self.sysex_model.appendRow(item)
+            if values[-1] != 0xf7:
+                item = QtGui.QStandardItem('F7')
+                self.sysex_model.appendRow(item)
+        self.sysex_model.item(0).setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable)
+        self.sysex_model.item(self.sysex_model.rowCount()-1).setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable)
+        self.force_sysex_listview.setModel(self.sysex_model)
+        self.force_sysex_spin.setMaximum(self.sysex_model.rowCount()-2)
+        self.sysex_highlight(self.force_sysex_spin.value())
+
+    def sysex_input(self):
+        if self.sysex_model.rowCount() > 3:
+            sysex = ' '.join([str(self.sysex_model.item(i).text()) for i in range(self.sysex_model.rowCount())])
+        else:
+            sysex = None
+        res = self.sysex_dialog.exec_(sysex)
+        if not res:
+            return
+        self.sysex_create(res)
+
+    def sysex_edit(self, index, trigger, event):
+        self.sysex_old = self.sysex_model.itemFromIndex(index).text()
+        return QtGui.QListView.edit(self.force_sysex_listview, index, trigger, event)
+
+    def sysex_validate(self, delegate, hint):
+        QtGui.QListView.closeEditor(self.force_sysex_listview, delegate, hint)
+        index = self.force_sysex_listview.currentIndex().row()
+        item = self.force_sysex_listview.model().item(index, 0)
+        value = item.text()
+        try:
+            int_value = int(value)
+            if int_value < 0:
+                item.setText('0')
+        except:
+            try:
+                item.setText('{:02X}'.format(int(value, 16)))
+            except:
+                item.setText(self.sysex_old)
+
+    def sysex_highlight(self, index):
+        for i in range(1, self.sysex_model.rowCount()):
+            setBold(self.sysex_model.item(i), False)
+        setBold(self.sysex_model.item(index))
+
 
     def closeEvent(self, event):
         if self.current_widget:
@@ -497,6 +583,7 @@ class EditorWin(QtGui.QMainWindow):
             self.force_ctrl_frame.setVisible(False)
 #            self.force_note_frame.setEnabled(False)
             self.force_note_frame.setVisible(False)
+            self.force_sysex_frame.setVisible(False)
 
     def chan_reset(self):
         self.chan_spin.setValue(0)
@@ -587,14 +674,6 @@ class EditorWin(QtGui.QMainWindow):
         self.current_widget['patch'] = patch
         if len(patch):
             self.patch_edit.valid = patch_validate(patch)
-#            patch_format = patch
-#            for rep in md_replace:
-#                patch_format = patch_format.replace(rep, 'md.'+rep)
-#            try:
-#                eval(patch_format)
-#                self.patch_edit.valid = True
-#            except:
-#                self.patch_edit.valid = False
         else:
             self.patch_edit.valid = True
         self.patch_edit.setStyleSheet('color: {}'.format(patch_colors[self.patch_edit.valid][self.enable_chk.isChecked()]))
@@ -679,6 +758,8 @@ class EditorWin(QtGui.QMainWindow):
         self.current_widget['convert_type'] = convert
         if self.convert_ctrl_radio.isChecked():
             self.current_widget['convert_values'] = self.force_ctrl_spin.value()
+        elif self.convert_sysex_radio.isChecked():
+            self.current_widget['convert_values'] = (' '.join([str(self.sysex_model.item(i).text()) for i in range(self.sysex_model.rowCount())]), self.force_sysex_spin.value())
         else:
             if self.force_note_change_radio.isChecked():
                 self.current_widget['convert_values'] = (None, self.force_vel_spin.value())
@@ -834,6 +915,13 @@ class EditorWin(QtGui.QMainWindow):
             self.force_note_change_radio.setChecked(True)
             self.force_note_combo.setCurrentIndex(0)
             self.force_vel_spin.setValue(127)
+        elif convert_type == ToSysEx:
+            self.convert_sysex_radio.setChecked(True)
+            sysex, sysex_id = widget_dict.get('convert_values', ('F0 00 F7', 1))
+            sysex = [int(x, 16) for x in sysex.split()]
+            self.sysex_create(sysex)
+            self.force_sysex_spin.setMaximum(len(sysex)-2)
+            self.force_sysex_spin.setValue(sysex_id)
         else:
             self.convert_note_radio.setChecked(True)
             convert_note, convert_vel = widget_dict.get('convert_values', (None, 0))
@@ -859,7 +947,6 @@ class EditorWin(QtGui.QMainWindow):
 
         #LED
         led = widget_dict.get('led', True)
-        print led
         self.led_combo.blockSignals(True)
         if led == None or (isinstance(led, bool) and led == False):
             self.led_combo.setCurrentIndex(0)

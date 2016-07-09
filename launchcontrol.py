@@ -13,7 +13,6 @@ import icons
 from const import *
 from utils import *
 from classes import *
-from parsers import *
 
 version = 0.8
 prog_name = 'NoLaE'
@@ -1344,6 +1343,20 @@ class Win(QtGui.QMainWindow):
                         ctrl_id = patch_data.get('convert_values', event_id)
                         if (event_type == md.CTRL and event_id != ctrl_id) or event_type == md.NOTE:
                             conv_patch = md.Ctrl(ctrl_id, md.EVENT_DATA2)
+                    elif convert == ToSysEx:
+                        print 'son qui'
+                        convert_sysex, convert_id = patch_data.get('convert_values', ('F0 00 F7', 1))
+                        convert_sysex = [int(x, 16) for x in convert_sysex.split()]
+                        if event_type == md.NOTE:
+                            conv_patch = md.Ctrl(event_id, md.EVENT_DATA2) >> md.extra.CtrlToSysEx(event_id, convert_sysex, convert_id)
+                        else:
+#                            conv_patch = md.extra.CtrlToSysEx(event_id, convert_sysex, convert_id)
+#                            convert_sysex[convert_id] = md.EVENT_DATA2
+                            sysex_start = convert_sysex[:convert_id]
+                            sysex_end = convert_sysex[convert_id+1:]
+                            print convert_sysex
+                            conv_patch = md.Call(lambda ev, dest=dest, start=sysex_start, end=sysex_end: md.engine.output_event(md.event.SysExEvent(dest, start+[ev.data2]+end)))
+#                            conv_patch = md.Process(lambda ev, dest=dest, start=sysex_start, end=sysex_end: md.event.SysExEvent(dest, start+[ev.data2]+end))
                     else:
                         convert_note, convert_vel = patch_data.get('convert_values', (None, 0))
                         if convert_note is None:
@@ -1391,9 +1404,6 @@ class Win(QtGui.QMainWindow):
                         else:
                             patch = pre_patch
                 else:
-#                    for rep in md_replace:
-#                        patch = patch.replace(rep, 'md.'+rep)
-#                    patch = eval(patch)
                     patch = patch_parse(patch, event, template, len(out_ports))
                     if pre_patch:
                         patch = pre_patch >> patch
