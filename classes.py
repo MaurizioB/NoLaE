@@ -368,4 +368,62 @@ class Piano(QtGui.QDialog):
             self.highlight = None
         return QtGui.QDialog.exec_(self)
 
+class SysExDialog(QtGui.QInputDialog):
+    def __init__(self, parent):
+        QtGui.QInputDialog.__init__(self, parent)
+        self.setWindowTitle('Input SysEx')
+        self.setLabelText('Enter the full SysEx string:')
+
+    def event(self, event):
+        if event.type() == QtCore.QEvent.WindowActivate:
+            if not len(self.textValue()):
+                self.get_clipboard()
+        return QtGui.QInputDialog.event(self, event)
+
+    def get_clipboard(self):
+        cb = QtGui.QApplication.clipboard()
+        sysex = str(cb.text())
+        if len(sysex):
+            try:
+                sysex = eval(sysex)
+                if isinstance(sysex, tuple) or isinstance(sysex, list):
+                    sysex = ' '.join('{:02X}'.format(byte) for byte in sysex)
+                else:
+                    raise
+            except:
+                try:
+                    for byte in sysex.split():
+                        try:
+                            int(byte, 16)
+                        except:
+                            raise
+                    sysex = ' '.join('{:02X}'.format(int(byte, 16)) for byte in sysex.split())
+                except:
+                    sysex = ''
+                if len(sysex):
+                    if not sysex.startswith('F0 '):
+                        sysex = 'F0 ' + sysex
+                    if not sysex.endswith(' F7'):
+                        sysex += ' F7'
+            self.setTextValue(sysex)
+
+    def exec_(self, sysex=None):
+        if sysex is None:
+            self.get_clipboard()
+        else:
+            self.setTextValue(sysex)
+        res = QtGui.QInputDialog.exec_(self)
+        if not res:
+            return False
+        try:
+            sysex = []
+            for byte in str(self.textValue()).split():
+                sysex.append(int(byte, 16))
+            return sysex
+        except:
+            return False
+
+
+
+
 
