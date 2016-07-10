@@ -130,6 +130,24 @@
           </widget>
          </item>
          <item>
+          <widget class="QPushButton" name="led_select_btn">
+           <property name="maximumSize">
+            <size>
+             <width>20</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset>
+             <normalon>:/icons/grid-icon.png</normalon>
+            </iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QComboBox" name="led_combo"/>
          </item>
          <item>
@@ -894,6 +912,43 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <tabstops>
+  <tabstop>dest_combo</tabstop>
+  <tabstop>chan_spin</tabstop>
+  <tabstop>chan_reset_btn</tabstop>
+  <tabstop>text_edit</tabstop>
+  <tabstop>led_select_btn</tabstop>
+  <tabstop>led_combo</tabstop>
+  <tabstop>led_reset_btn</tabstop>
+  <tabstop>led_base_combo</tabstop>
+  <tabstop>led_action_combo</tabstop>
+  <tabstop>toggle_chk</tabstop>
+  <tabstop>toggle_listview</tabstop>
+  <tabstop>toggle_remove_btn</tabstop>
+  <tabstop>toggle_add_btn</tabstop>
+  <tabstop>range_chk</tabstop>
+  <tabstop>range_min_spin</tabstop>
+  <tabstop>range_max_spin</tabstop>
+  <tabstop>range_combo</tabstop>
+  <tabstop>convert_chk</tabstop>
+  <tabstop>convert_ctrl_radio</tabstop>
+  <tabstop>force_ctrl_spin</tabstop>
+  <tabstop>convert_note_radio</tabstop>
+  <tabstop>force_note_toggle_chk</tabstop>
+  <tabstop>force_note_change_radio</tabstop>
+  <tabstop>force_vel_change_radio</tabstop>
+  <tabstop>convert_piano_btn</tabstop>
+  <tabstop>force_note_combo</tabstop>
+  <tabstop>force_vel_spin</tabstop>
+  <tabstop>convert_sysex_radio</tabstop>
+  <tabstop>force_sysex_listview</tabstop>
+  <tabstop>force_sysex_btn</tabstop>
+  <tabstop>force_sysex_spin</tabstop>
+  <tabstop>patch_edit</tabstop>
+  <tabstop>enable_chk</tabstop>
+  <tabstop>patch_toolbtn</tabstop>
+  <tabstop>restore_btn</tabstop>
+ </tabstops>
  <resources>
   <include location="launchcontrol.qrc"/>
  </resources>

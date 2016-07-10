@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>grid-icon.png</file>
     <file>action-undo.png</file>
     <file>smallpiano.png</file>
     <file>eye.png</file>

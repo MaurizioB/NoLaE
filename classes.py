@@ -353,7 +353,7 @@ class Piano(QtGui.QDialog):
         self.setMinimumWidth(key.width()*75)
 
     def exec_(self, highlight=None):
-        if self.highlight:
+        if self.highlight is not None:
             key = self.keys[self.highlight]
             key.current_color = key.color = key._color
             key.repaint()
@@ -367,6 +367,104 @@ class Piano(QtGui.QDialog):
         else:
             self.highlight = None
         return QtGui.QDialog.exec_(self)
+
+class NoLedWidget(QtGui.QWidget):
+    def __init__(self, parent):
+        QtGui.QWidget.__init__(self, parent)
+        self.color = QtGui.QColor(220, 220, 220)
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter()
+        qp.begin(self)
+        self.draw_me(qp)
+        qp.end()
+
+    def draw_me(self, qp):
+#        qp.setPen(QtGui.QPen(QtCore.Qt.black, 0.5, QtCore.Qt.SolidLine))
+        qp.setBrush(self.color)
+        qp.drawRect(2, 2, self.width(), self.height())
+
+
+class LedWidget(QtGui.QWidget):
+    def __init__(self, parent, id):
+        QtGui.QWidget.__init__(self, parent)
+        self.id = id
+        self.setMinimumSize(10, 10)
+        self.setMaximumSize(10, 10)
+        self.color = QtCore.Qt.green
+        self._color = self.current_color = self.color
+        self.hover_color = QtCore.Qt.red
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter()
+        qp.begin(self)
+        self.draw_led(qp)
+        qp.end()
+
+    def draw_led(self, qp):
+        qp.setPen(QtGui.QPen(QtCore.Qt.black, 0.5, QtCore.Qt.SolidLine))
+        qp.setBrush(self.current_color)
+        qp.drawRect(2, 2, 6, 6)
+
+    def mouseReleaseEvent(self, event):
+        self.parent().done(self.id+1)
+
+    def enterEvent(self, event):
+        self.current_color = self.hover_color
+        self.update()
+
+    def leaveEvent(self, event):
+        self.current_color = self.color
+        self.update()
+
+
+class LedGrid(QtGui.QDialog):
+    def __init__(self, parent):
+        QtGui.QDialog.__init__(self, parent)
+        self.setWindowTitle('LED selector')
+        self.grid = QtGui.QGridLayout()
+        self.setLayout(self.grid)
+        self.highlight = None
+        self.led_list = []
+        for i in range(24):
+            led = LedWidget(self, i)
+            self.grid.addWidget(led, i/8, divmod(i, 8)[1])
+            self.led_list.append(led)
+        spacer = QtGui.QWidget()
+        spacer.setMinimumWidth(8)
+        self.grid.addWidget(spacer, 0, 8)
+        for i in range(16):
+            led = LedWidget(self, i+24)
+            self.grid.addWidget(led, i/8+7, divmod(i, 8)[1])
+            self.led_list.append(led)
+        for i in range(4):
+            led = LedWidget(self, i+40)
+            self.grid.addWidget(led, 3+i, 9, 1, 2, QtCore.Qt.AlignHCenter)
+            self.led_list.append(led)
+        for i in range(4):
+            led = LedWidget(self, i+44)
+            self.grid.addWidget(led, 1+i/2, divmod(i, 2)[1]+9)
+            self.led_list.append(led)
+        for i in range(8):
+            noled = NoLedWidget(self)
+            self.grid.addWidget(noled, 3, i, 4, 1)
+
+    def exec_(self, highlight=None):
+        if self.highlight is not None:
+            led = self.led_list[self.highlight]
+            led.current_color = led.color = led._color
+            led.repaint()
+            led.update()
+        if highlight >= 0:
+            self.highlight = highlight
+            led = self.led_list[self.highlight]
+            led.current_color = led.color = QtGui.QColor(255, 150, 150)
+            led.repaint()
+            led.update()
+        else:
+            self.highlight = None
+        return QtGui.QDialog.exec_(self)
+
 
 class SysExDialog(QtGui.QInputDialog):
     def __init__(self, parent):

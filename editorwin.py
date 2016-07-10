@@ -35,6 +35,7 @@ class EditorWin(QtGui.QMainWindow):
         self.patch_edit.focusInEvent = self.patch_edit_focusIn
         self.patch_edit.focusOutEvent = self.patch_edit_focusOut
         self.enable_chk.toggled.connect(self.enable_set)
+        self.led_select_btn.clicked.connect(self.led_select)
         self.led_reset_btn.clicked.connect(self.led_reset)
         self.main.outputChanged.connect(self.output_update)
         self.dest_combo.currentIndexChanged.connect(self.dest_update)
@@ -80,6 +81,8 @@ class EditorWin(QtGui.QMainWindow):
 
         self.piano = Piano(self)
         self.piano.setModal(True)
+        self.led_dialog = LedGrid(self)
+        self.led_dialog.setModal(True)
         self.sysex_dialog = SysExDialog(self)
         self.sysex_dialog.setModal(True)
 
@@ -637,6 +640,11 @@ class EditorWin(QtGui.QMainWindow):
         self.color_table.setMinimumWidth(sum([self.color_table.columnWidth(c) for c in range(self.led_base_combo.model().columnCount())]))
         self.action_table.setMinimumWidth(sum([self.action_table.columnWidth(c) for c in range(self.action_full_model.columnCount())]))
         self.current_widget['led'] = led - 1
+
+    def led_select(self):
+        res = self.led_dialog.exec_(self.led_combo.currentIndex()-1)
+        if res:
+            self.led_combo.setCurrentIndex(res)
 
     def dest_update(self, index):
         if not self.current_widget:
