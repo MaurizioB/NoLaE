@@ -88,8 +88,11 @@ def patch_parse(patch, event, template, out_ports):
     def TemplatePrev():
         return Template(template if template>1 else 15)
     try:
+        patch = md_replace_pattern.sub(lambda m: md_replace[re.escape(m.group(0))], patch)
         return eval(patch)
-    except:
+    except Exception as err:
+        print err
+        print 'Patch:\t'.format(patch)
         return md.Pass()
 
 

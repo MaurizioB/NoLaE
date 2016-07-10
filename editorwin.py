@@ -167,8 +167,10 @@ class EditorWin(QtGui.QMainWindow):
         if value:
             self.toggle_chk.setChecked(False)
             if not self.current_widget.get('range'):
-                self.current_widget['range'] = value
+                self.current_widget['range'] = True
                 self.current_widget['range_values'] = (0, 127, 0)
+        else:
+            self.current_widget['range'] = False
 
     def convert_set(self, value):
         for button in self.convert_group.buttons():
@@ -1051,6 +1053,9 @@ class EditorWin(QtGui.QMainWindow):
             toggle = self.current_widget.get('toggle', False)
             if toggle:
                 self.toggle_chk.setChecked(True)
+                if vrange:
+                    self.current_widget['range'] = False
+                    self.range_chk.setChecked(False)
             else:
                 self.toggle_chk.setChecked(False)
                 self.toggle_listview.setEnabled(False)
