@@ -1706,8 +1706,6 @@ class Win(QtGui.QMainWindow):
                             config_output = v
                             continue
                         btn = self.temp_id_group.button(k)
-                        btn.state = True
-                        setBold(btn)
                         template_dict = config_raw[k]
                         for w, x in template_dict.items():
                             if w == 'id':
@@ -1717,6 +1715,11 @@ class Win(QtGui.QMainWindow):
                                 self.template_groups[k] = x
                                 continue
                             self.conf_dict[k][getattr(self, '{}'.format(w))] = x
+                        if any(self.conf_dict[k].values()):
+                            btn.state = True
+                            setBold(btn)
+                        else:
+                            btn.state = False
             except Exception as e:
                 print 'PD!'
                 print e
@@ -2318,11 +2321,14 @@ class Win(QtGui.QMainWindow):
 
     def editor_widget_toggle_set(self, value):
         sender_widget = self.sender().parent()
-        if not self.conf_dict[self.template][sender_widget].get('toggle'):
-            self.conf_dict[self.template][sender_widget]['toggle'] = value
-            self.conf_dict[self.template][sender_widget]['toggle_values'] = (0, 127)
+        widget_dict = self.conf_dict[self.template][sender_widget]
+        if not widget_dict.get('enabled'):
+            return
+        if not widget_dict.get('toggle'):
+            widget_dict['toggle'] = value
+            widget_dict['toggle_values'] = (0, 127)
         else:
-            self.conf_dict[self.template][sender_widget]['toggle'] = value
+            widget_dict['toggle'] = value
         if self.editor_win.current_widget and self.editor_win.current_widget.get('widget') == sender_widget:
             self.editor_win.toggle_chk.setChecked(value)
 
