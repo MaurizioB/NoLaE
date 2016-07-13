@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -40,7 +40,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -56,7 +56,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -72,7 +72,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -88,7 +88,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -104,7 +104,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -120,7 +120,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -136,7 +136,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -152,7 +152,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -168,7 +168,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -184,7 +184,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -200,7 +200,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -216,7 +216,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -232,7 +232,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -248,7 +248,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -264,7 +264,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="text">
      <string/>
@@ -295,7 +295,7 @@
       </rect>
      </property>
      <property name="contextMenuPolicy">
-      <enum>Qt::ActionsContextMenu</enum>
+      <enum>Qt::CustomContextMenu</enum>
      </property>
      <property name="text">
       <string>▲</string>
@@ -311,7 +311,7 @@
       </rect>
      </property>
      <property name="contextMenuPolicy">
-      <enum>Qt::ActionsContextMenu</enum>
+      <enum>Qt::CustomContextMenu</enum>
      </property>
      <property name="text">
       <string>▼</string>
@@ -343,7 +343,7 @@
       </rect>
      </property>
      <property name="contextMenuPolicy">
-      <enum>Qt::ActionsContextMenu</enum>
+      <enum>Qt::CustomContextMenu</enum>
      </property>
      <property name="text">
       <string>◀</string>
@@ -359,7 +359,7 @@
       </rect>
      </property>
      <property name="contextMenuPolicy">
-      <enum>Qt::ActionsContextMenu</enum>
+      <enum>Qt::CustomContextMenu</enum>
      </property>
      <property name="text">
       <string>▶</string>
@@ -376,7 +376,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -392,7 +392,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -408,7 +408,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -424,7 +424,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -440,7 +440,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -456,7 +456,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -472,7 +472,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -497,7 +497,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -513,7 +513,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -538,7 +538,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -554,7 +554,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -570,7 +570,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -586,7 +586,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -611,7 +611,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -636,7 +636,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -652,7 +652,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -668,7 +668,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -693,7 +693,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -718,7 +718,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -734,7 +734,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -759,7 +759,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -775,7 +775,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -800,7 +800,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -816,7 +816,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -832,7 +832,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -857,7 +857,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -873,7 +873,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -898,7 +898,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -914,7 +914,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -930,7 +930,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -955,7 +955,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -980,7 +980,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -996,7 +996,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1021,7 +1021,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1046,7 +1046,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -1062,7 +1062,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1087,7 +1087,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -1103,7 +1103,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1128,7 +1128,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1153,7 +1153,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -1172,7 +1172,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -1191,7 +1191,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1216,7 +1216,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1241,7 +1241,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -1260,7 +1260,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -1279,7 +1279,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1304,7 +1304,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1329,7 +1329,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -1345,7 +1345,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -1361,7 +1361,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1386,7 +1386,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1411,7 +1411,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1436,7 +1436,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -1455,7 +1455,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1480,7 +1480,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -1499,7 +1499,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -1518,7 +1518,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="maximum">
      <number>127</number>
@@ -1537,7 +1537,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1562,7 +1562,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1587,7 +1587,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1612,7 +1612,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1637,7 +1637,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1662,7 +1662,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -1687,7 +1687,7 @@
      </rect>
     </property>
     <property name="contextMenuPolicy">
-     <enum>Qt::ActionsContextMenu</enum>
+     <enum>Qt::CustomContextMenu</enum>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -2256,7 +2256,7 @@
       </rect>
      </property>
      <property name="contextMenuPolicy">
-      <enum>Qt::ActionsContextMenu</enum>
+      <enum>Qt::CustomContextMenu</enum>
      </property>
      <property name="text">
       <string/>
@@ -2272,7 +2272,7 @@
       </rect>
      </property>
      <property name="contextMenuPolicy">
-      <enum>Qt::ActionsContextMenu</enum>
+      <enum>Qt::CustomContextMenu</enum>
      </property>
      <property name="text">
       <string/>
@@ -2291,7 +2291,7 @@
       </rect>
      </property>
      <property name="contextMenuPolicy">
-      <enum>Qt::ActionsContextMenu</enum>
+      <enum>Qt::CustomContextMenu</enum>
      </property>
      <property name="text">
       <string/>
@@ -2310,7 +2310,7 @@
       </rect>
      </property>
      <property name="contextMenuPolicy">
-      <enum>Qt::ActionsContextMenu</enum>
+      <enum>Qt::CustomContextMenu</enum>
      </property>
      <property name="text">
       <string/>

@@ -20,6 +20,7 @@ description = 'A Novation LaunchControl mapper and filter'
 backend = 'alsa'
 default_map = 'default.nlm'
 Widget = namedtuple('Widget', 'inst ext mode')
+WidgetClipboard = namedtuple('WidgetClipboard', 'widget template')
 
 def process_args():
     parser = argparse.ArgumentParser(version=str(version), description=description)
@@ -50,6 +51,7 @@ def process_args():
 
 class Win(QtGui.QMainWindow):
     widgetChanged = QtCore.pyqtSignal(object)
+    widgetUpdated = QtCore.pyqtSignal(object, bool)
     outputChanged = QtCore.pyqtSignal()
     templateRenamed = QtCore.pyqtSignal(int, object)
 
@@ -107,6 +109,8 @@ class Win(QtGui.QMainWindow):
             self.file_menu.addAction(saveAction)
             self.template_clipboard = None
             self.template_clipcut = False
+            self.widget_clipboard = None
+            self.widget_clipcut = False
             rename_action = QtGui.QAction('Rename', self)
             rename_action.triggered.connect(lambda: self.template_rename_dialog(template=self.template))
             self.template_menu.addAction(rename_action)
@@ -1792,25 +1796,44 @@ class Win(QtGui.QMainWindow):
         self.editor_win.widgetSaved.connect(self.editor_template_check)
         self.editor_win.show()
         for widget in self.widget_order:
-            ext_action = QtGui.QAction('Edit controller', widget)
-            ext_action.triggered.connect(self.editor_widget_edit)
-            widget.addAction(ext_action)
-            copy_action = QtGui.QAction('Copy controller', widget)
-            copy_action.setEnabled(False)
-            widget.addAction(copy_action)
-            clear_action = QtGui.QAction('Clear controller', widget)
-            clear_action.triggered.connect(self.editor_widget_clear)
-            widget.addAction(clear_action)
-            #TODO: not important, disable if not set
-            if isinstance(widget, QtGui.QPushButton):
-                toggle_action = QtGui.QAction('Toggle', widget)
-                toggle_action.setCheckable(True)
-                toggle_action.triggered.connect(self.editor_widget_toggle_set)
-                widget.addAction(toggle_action)
-                widget.toggle_action = toggle_action
-            else:
-                widget.toggle_action = None
-            [widget.siblingLabel.addAction(action) for action in widget.actions()]
+            widget.customContextMenuRequested.connect(self.editor_widget_menu)
+            if not isinstance(widget, QtGui.QPushButton):
+                widget.siblingLabel.customContextMenuRequested.connect(self.editor_widget_menu)
+#            ext_action = QtGui.QAction('Edit controller', widget)
+#            ext_action.triggered.connect(self.editor_widget_edit)
+#            widget.addAction(ext_action)
+#            clear_action = QtGui.QAction('Clear controller', widget)
+#            clear_action.triggered.connect(self.editor_widget_clear)
+#            widget.addAction(clear_action)
+#            #TODO: not important, disable if not set
+#            if isinstance(widget, QtGui.QPushButton):
+#                toggle_action = QtGui.QAction('Toggle', widget)
+#                toggle_action.setCheckable(True)
+#                toggle_action.triggered.connect(self.editor_widget_toggle_set)
+#                widget.addAction(toggle_action)
+#                widget.toggle_action = toggle_action
+#            else:
+#                widget.toggle_action = None
+#            separator = QtGui.QAction('', widget)
+#            separator.setSeparator(True)
+#            widget.addAction(separator)
+#            copy_action = QtGui.QAction('Copy controller', widget)
+#            copy_action.triggered.connect(self.editor_widget_copy)
+#            widget.addAction(copy_action)
+#            cut_action = QtGui.QAction('Copy controller', widget)
+#            cut_action.triggered.connect(self.editor_widget_cut)
+#            widget.addAction(cut_action)
+#            paste_action = QtGui.QAction('Paste controller', widget)
+#            paste_action.triggered.connect(self.editor_widget_paste)
+#            paste_action.setEnabled(False)
+#            widget.addAction(paste_action)
+#            widget.paste_action = paste_action
+#            swap_action = QtGui.QAction('Swap controller', widget)
+#            swap_action.triggered.connect(self.editor_widget_swap)
+#            swap_action.setEnabled(False)
+#            widget.addAction(swap_action)
+#            widget.swap_action = swap_action
+#            [widget.siblingLabel.addAction(action) for action in widget.actions()]
 
         app = QtCore.QCoreApplication.instance()
         app.installEventFilter(self)
@@ -1830,6 +1853,7 @@ class Win(QtGui.QMainWindow):
         for widget in self.widget_order:
 #            widget_dict = self.map_dict[self.template][widget]
             widget.setToolTip(self.widget_tooltip(widget, self.conf_dict[self.template][widget]))
+
 
     def show_overlay(self, value):
         if value:
@@ -2306,11 +2330,47 @@ class Win(QtGui.QMainWindow):
         return tooltip.format(widget.readable, enabled, dest, text, led_text, led_extent)
 
 
-
-    def editor_widget_edit(self, *args):
-        sender_widget = self.sender().parent()
-        self.widgetChanged.emit(sender_widget)
-        self.editor_win.show()
+    def editor_widget_menu(self, pos):
+        sender_widget = self.sender()
+        if isinstance(sender_widget, QtGui.QLabel):
+            widget = sender_widget.siblingWidget
+        else:
+            widget = sender_widget
+        menu = QtGui.QMenu(self)
+        ext_action = QtGui.QAction('Edit controller', widget)
+        ext_action.triggered.connect(self.editor_widget_edit)
+        menu.addAction(ext_action)
+        clear_action = QtGui.QAction('Clear controller', widget)
+        clear_action.triggered.connect(self.editor_widget_clear)
+        menu.addAction(clear_action)
+        menu.addSeparator()
+        copy_action = QtGui.QAction('Copy controller', widget)
+        cut_action = QtGui.QAction('Cut controller', widget)
+        copy_action.triggered.connect(lambda: self.editor_widget_copy(widget))
+        cut_action.triggered.connect(lambda: self.editor_widget_cut(widget))
+        if self.widget_clipboard:
+            if self.widget_clipboard.template != self.template:
+                diff_template = ' from template {}'.format(self.template_list[self.widget_clipboard.template])
+            else:
+                diff_template = ''
+            paste_action = QtGui.QAction('Paste {} here{}'.format(self.widget_clipboard.widget.readable, diff_template), widget)
+            paste_action.triggered.connect(lambda: self.editor_widget_paste(widget))
+            swap_action = QtGui.QAction('Swap with {}{}'.format(self.widget_clipboard.widget.readable, diff_template), widget)
+            swap_action.triggered.connect(lambda: self.editor_widget_swap(widget))
+            if (widget, self.template) == (self.widget_clipboard):
+                paste_action.setEnabled(False)
+                swap_action.setEnabled(False)
+                if self.widget_clipcut:
+                    cut_action.setEnabled(False)
+                else:
+                    copy_action.setEnabled(False)
+        else:
+            paste_action = QtGui.QAction('Paste controller', widget)
+            paste_action.setEnabled(False)
+            swap_action = QtGui.QAction('Swap controller', widget)
+            swap_action.setEnabled(False)
+        menu.addActions([copy_action, cut_action, paste_action, swap_action])
+        menu.exec_(sender_widget.mapToGlobal(pos))
 
     def editor_widget_clear(self, *args):
         sender_widget = self.sender().parent()
@@ -2334,6 +2394,70 @@ class Win(QtGui.QMainWindow):
             widget_dict['toggle'] = value
         if self.editor_win.current_widget and self.editor_win.current_widget.get('widget') == sender_widget:
             self.editor_win.toggle_chk.setChecked(value)
+
+    def editor_widget_edit(self, *args):
+        sender_widget = self.sender().parent()
+        self.widgetChanged.emit(sender_widget)
+        self.editor_win.show()
+
+    def editor_widget_copy(self, widget, cut=False):
+        if not self.conf_dict[self.template][widget]:
+            return
+        self.widget_clipboard = WidgetClipboard(widget, self.template)
+        if cut:
+            self.widget_clipcut = True
+        else:
+            self.widget_clipcut = False
+
+    def editor_widget_cut(self, widget):
+        if not self.conf_dict[self.template][widget]:
+            return
+        self.editor_widget_copy(widget, True)
+
+    def editor_widget_paste(self, dest_widget):
+        source_widget, source_template = self.widget_clipboard
+        if self.conf_dict[self.template][dest_widget]:
+            res = QtGui.QMessageBox.question(self, 'Overwrite controller?', 
+                '''Controller <b>{}</b> is already set; overwrite it with data from <b>{}</b>?'''.format(dest_widget.readable, source_widget.readable), 
+                buttons=QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+            if res != QtGui.QMessageBox.Yes:
+                return
+        self.conf_dict[self.template][dest_widget] = copy(self.conf_dict[source_template][source_widget])
+#        dest_widget.siblingLabel.setText(self.conf_dict[self.template][dest_widget])
+        if self.widget_clipcut:
+            self.conf_dict[source_template][source_widget] = None
+            source_widget.siblingLabel.setText('')
+            self.widget_clipboard = None
+            self.widget_clipcut = False
+        self.widgetUpdated.emit(dest_widget, True)
+
+    def editor_widget_swap(self, dest_widget):
+        source_widget, source_template = self.widget_clipboard
+        res = QtGui.QMessageBox.question(self, 'Swap controllers?', 
+            '''Swap controller <b>{}</b> with <b>{}</b>?'''.format(dest_widget.readable, source_widget.readable), 
+            buttons=QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+        if res != QtGui.QMessageBox.Yes:
+            return
+        source_dict = copy(self.conf_dict[source_template][source_widget])
+        dest_dict = copy(self.conf_dict[self.template][dest_widget])
+        dest_label = dest_widget.siblingLabel.text()
+        if source_template == self.template:
+            source_label = source_widget.siblingLabel.text()
+            source_widget.siblingLabel.setText(dest_label)
+        else:
+            source_label = source_dict.get('text')
+            if not source_label:
+                source_label = source_dict.get('patch')
+            if not source_label:
+                source_label = '(set)'
+                
+        dest_widget.siblingLabel.setText(source_label)
+        self.conf_dict[self.template][dest_widget] = source_dict
+        self.conf_dict[source_template][source_widget] = dest_dict
+        self.widget_clipboard = None
+        self.widget_clipcut = False
+        if self.editor_win.current_widget and self.editor_win.current_widget['widget'] in [source_widget, dest_widget]:
+            self.widgetUpdated.emit(self.editor_win.current_widget['widget'], True)
 
     def editor_template_check(self, template=None):
         if not template:

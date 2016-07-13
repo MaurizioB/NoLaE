@@ -32,6 +32,7 @@ class EditorWin(QtGui.QMainWindow):
         self.patch = ''
         self.patch_edit.valid = False
         self.main.widgetChanged.connect(self.widget_change)
+        self.main.widgetUpdated.connect(self.widget_change)
         self.patch_edit.focusInEvent = self.patch_edit_focusIn
         self.patch_edit.focusOutEvent = self.patch_edit_focusOut
         self.enable_chk.toggled.connect(self.enable_set)
@@ -126,10 +127,6 @@ class EditorWin(QtGui.QMainWindow):
                 self.toggle_listview.setModel(toggle_model)
             self.range_chk.setChecked(False)
         self.current_widget['toggle'] = value
-        action = self.current_widget['widget'].toggle_action
-        if action:
-            #NOTE: I suppose that this might change in future version of Qt, since it could send a signal. Keep an eye
-            action.setChecked(value)
 
     def toggle_value_add(self):
         if self.toggle_listview.model().rowCount() > 8:
@@ -830,18 +827,20 @@ class EditorWin(QtGui.QMainWindow):
         self.main.conf_dict[template][widget] = self.current_widget
         self.widgetSaved.emit(template)
 
-    def widget_change(self, widget):
+    def widget_change(self, widget, force=False):
         self.enable_chk.setEnabled(True)
         #save previous widget
         if self.current_widget:
 #            print self.current_widget
-            if self.current_widget['widget'] == widget:
-                return
-            self.widget_save()
+            if not force:
+                if self.current_widget['widget'] == widget:
+                    return
+                self.widget_save()
 
         if not self.isVisible():
             return
         #Prepare editor window
+        print self.main.map_dict[self.main.template].get(widget)
         self.status_update(self.main.map_dict[self.main.template].get(widget))
         self.base_group.setTitle('Base configuration: {}'.format(widget.readable))
         led_index = self.led_combo.currentIndex()
@@ -877,6 +876,8 @@ class EditorWin(QtGui.QMainWindow):
             self.range_chk.setChecked(False)
             self.convert_chk.setChecked(False)
             self.convert_ctrl_radio.setChecked(True)
+            self.text_edit.setText('')
+            self.labelChanged.emit(widget, False)
             return
 
         widget_dict['widget'] = widget
@@ -1079,6 +1080,14 @@ class EditorWin(QtGui.QMainWindow):
                     self.current_widget['toggle'] = self.current_widget.get('toggle', True)
                     self.current_widget['toggle_model'] = toggle_model
         self.toggle_listview.setModel(toggle_model)
+
+        if force:
+            if text:
+                self.labelChanged.emit(self.current_widget['widget'], text)
+            elif patch:
+                self.labelChanged.emit(self.current_widget['widget'], patch)
+            else:
+                self.labelChanged.emit(self.current_widget['widget'], True)
 
 
     def patch_edit_focusIn(self, event):
