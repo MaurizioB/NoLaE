@@ -195,7 +195,7 @@ class EditorWin(QtGui.QMainWindow):
         self.force_vel_change_radio.setEnabled(note)
         self.force_note_lbl.setEnabled(note)
         self.force_note_combo.setEnabled(True if (note and self.force_vel_change_radio.isChecked()) else False)
-        self.convert_piano_btn.setEnabled(note)
+        self.convert_piano_btn.setEnabled(True if (note and self.force_vel_change_radio.isChecked()) else False)
         self.force_vel_lbl.setEnabled(note)
         self.force_vel_spin.setEnabled(note)
         self.force_sysex_listview.setEnabled(sysex)
@@ -223,7 +223,7 @@ class EditorWin(QtGui.QMainWindow):
         self.force_vel_change_radio.setEnabled(note)
         self.force_note_lbl.setEnabled(note)
         self.force_note_combo.setEnabled(True if (note and self.force_vel_change_radio.isChecked()) else False)
-        self.convert_piano_btn.setEnabled(note)
+        self.convert_piano_btn.setEnabled(True if (note and self.force_vel_change_radio.isChecked()) else False)
         self.force_vel_lbl.setEnabled(note)
         self.force_vel_spin.setEnabled(note)
         self.force_sysex_listview.setEnabled(sysex)
@@ -233,6 +233,7 @@ class EditorWin(QtGui.QMainWindow):
 
     def force_note_change_toggle(self, value):
         self.force_note_combo.setEnabled(not value)
+        self.convert_piano_btn.setEnabled(not value)
 
     def sysex_create(self, values=None):
         self.sysex_model = QtGui.QStandardItemModel()
@@ -504,7 +505,7 @@ class EditorWin(QtGui.QMainWindow):
         self.note_model = QtGui.QStandardItemModel()
         item = QtGui.QStandardItem('(incoming)')
         self.note_model.appendRow(item)
-        for n in range(127):
+        for n in range(128):
             note_name = md.util.note_name(n).upper()
             if '#' in note_name:
                 note_name = '{} {}'.format(note_name[:2], note_name[2:])
