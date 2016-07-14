@@ -756,11 +756,13 @@ class EditorWin(QtGui.QMainWindow):
             return
         if template is None:
             template = self.main.template
+        pre_save = copy(self.current_widget)
         widget = self.current_widget.get('widget')
         enabled = self.current_widget.get('enabled', True)
 #        dest = self.current_widget.get('dest', 1)
         text = self.current_widget.get('text', '')
-        self.current_widget['chan'] = self.chan_spin.value()
+        if self.chan_spin.value() > 0:
+            self.current_widget['chan'] = self.chan_spin.value()
         convert = self.convert_group.checkedButton().id
         if self.convert_chk.isChecked():
             self.current_widget['convert'] = True
@@ -830,6 +832,20 @@ class EditorWin(QtGui.QMainWindow):
 
         self.main.conf_dict[template][widget] = self.current_widget
         self.widgetSaved.emit(template)
+        post_save = copy(self.current_widget)
+        #TODO: this is temporary, we should find a better way to track data changes
+        if post_save.get('led_basevalue') == Enabled:
+            post_save.pop('led_basevalue')
+        if post_save.get('led_action') == Pass:
+            post_save.pop('led_action')
+        if isinstance(post_save.get('led'), bool) and post_save.get('led') == True:
+            post_save['led'] = post_save['widget'].siblingLed
+        if post_save.get('convert') == False:
+            post_save.pop('convert')
+            post_save.pop('convert_type')
+            post_save.pop('convert_values')
+        if pre_save != post_save:
+            self.main.dataChanged.emit()
 
     def widget_change(self, widget, force=False):
         self.enable_chk.setEnabled(True)

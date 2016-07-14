@@ -54,6 +54,7 @@ class Win(QtGui.QMainWindow):
     widgetUpdated = QtCore.pyqtSignal(object, bool)
     outputChanged = QtCore.pyqtSignal()
     templateRenamed = QtCore.pyqtSignal(int, object)
+    dataChanged = QtCore.pyqtSignal()
 
     def __init__(self, mode='live', map_file=None, config=None, backend='alsa'):
         QtGui.QMainWindow.__init__(self, parent=None)
@@ -79,7 +80,8 @@ class Win(QtGui.QMainWindow):
                 saveAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_DialogSaveButton), '&Save mapping', self)
                 saveAction.setShortcut('Ctrl+S')
                 saveAction.triggered.connect(self.map_save)
-                self.setWindowTitle('{} - Mapping'.format(prog_name))
+#                self.setWindowTitle('{} - Mapping'.format(prog_name))
+#                self.title_set()
                 self.template_clear_action = QtGui.QAction('Clear template', self)
                 self.template_clear_action.triggered.connect(self.mapping_template_clear)
                 self.template_menu.addAction(self.template_clear_action)
@@ -88,8 +90,10 @@ class Win(QtGui.QMainWindow):
                 self.operation_start = self.mapping_start
                 self.router.template_change.connect(self.template_remote_set)
                 self.file_menu.addAction(saveAction)
+                self.dataChanged.connect(self.data_changed)
             else:
-                self.setWindowTitle('{} - Live'.format(prog_name))
+#                self.setWindowTitle('{} - Live'.format(prog_name))
+#                self.title_set()
                 self.template_menu.setEnabled(False)
                 self.scenes, out_ports = self.routing_setup()
                 self.router.set_config(self.scenes, out_ports=out_ports)
@@ -145,8 +149,9 @@ class Win(QtGui.QMainWindow):
 
             self.router_thread = None
             self.router = None
-            self.setWindowTitle('{} - Editor {}'.format(prog_name, '({})'.format(self.config) if self.config else ''))
+#            self.setWindowTitle('{} - Editor {}'.format(prog_name, '({})'.format(self.config) if self.config else ''))
             self.operation_start = self.editor_start
+            self.dataChanged.connect(self.data_changed)
         quitAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_DialogCloseButton), '&Quit', self)
         quitAction.setShortcut('Ctrl+Q')
         quitAction.triggered.connect(QtGui.qApp.quit)
@@ -162,6 +167,7 @@ class Win(QtGui.QMainWindow):
         self.operation_start()
         self.template_model_create()
         self.setFixedSize(self.width(), self.height())
+        self.title_set()
 
     def start(self, simple):
         if not simple:
@@ -180,6 +186,29 @@ class Win(QtGui.QMainWindow):
         self.template_lbl.setMinimumSize(lbl_basesize)
         self.templates_tab.setMaximumWidth(tab_basesize.width())
         self.simple.show()
+
+    def title_set(self, changed=False):
+        if self.mode == MapMode:
+            post_text = ''
+            if self.map_file:
+                post_text += ' ({})'.format(self.map_file)
+            if changed:
+                post_text += ' [not saved]'
+            self.setWindowTitle('{} - Mapping{}'.format(prog_name, post_text))
+        elif self.mode == EditMode:
+            post_text = ''
+            if self.config:
+                post_text += ' ({})'.format(self.config)
+            if changed:
+                post_text += ' [not saved]'
+            self.setWindowTitle('{} - Editor{}'.format(prog_name, post_text))
+        else:
+            post_text = ''
+            self.setWindowTitle('{} - Live'.format(prog_name))
+
+    def data_changed(self):
+        print 'asbalasorba'
+        self.title_set(True)
 
     def about_box(self):
         text = '''
@@ -379,6 +408,7 @@ class Win(QtGui.QMainWindow):
         template_name, res = QtGui.QInputDialog.getText(self, 'Template Name', 'Enter template name', QtGui.QLineEdit.Normal, default_text)
         if res:
             self.templateRenamed.emit(template, str(template_name.toLatin1()))
+            self.dataChanged.emit()
 
     def template_copy(self, cut=False, template=None):
         if not cut:
@@ -475,6 +505,7 @@ class Win(QtGui.QMainWindow):
         if self.template in [self.template_clipboard, template]:
             self.template_simple_update()
         self.template_listview.setCurrentIndex(self.template_model.index(self.template, 0))
+        self.dataChanged.emit()
 
     def template_replace(self, toggle=None, template=None):
         if template == None:
@@ -510,6 +541,7 @@ class Win(QtGui.QMainWindow):
                 self.template_groups[template] = dest_groups
         source_templateclass = self.template_list[self.template_clipboard]
         self.templateRenamed.emit(template, source_templateclass.name if source_templateclass.has_name() else None)
+        self.dataChanged.emit()
         if self.template_clipcut:
             for widget in self.widget_order:
                 self.conf_dict[self.template_clipboard][widget] = None
@@ -544,6 +576,7 @@ class Win(QtGui.QMainWindow):
         if self.template in [dest_template, source_template]:
             self.template_simple_update()
         self.template_listview.setCurrentIndex(self.template_model.index(dest_template, 0))
+        self.dataChanged.emit()
 
     def template_rename(self, template, template_name):
         self.template_list[template].name = template_name
@@ -577,6 +610,7 @@ class Win(QtGui.QMainWindow):
         if template == self.template:
             self.template_simple_update()
         self.template_listview.setCurrentIndex(self.template_model.index(self.template, 0))
+        self.dataChanged.emit()
 
     def template_actions_enable(self, value):
         if not value:
