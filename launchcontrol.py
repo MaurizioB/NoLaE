@@ -207,7 +207,6 @@ class Win(QtGui.QMainWindow):
             self.setWindowTitle('{} - Live'.format(prog_name))
 
     def data_changed(self):
-        print 'asbalasorba'
         self.title_set(True)
 
     def about_box(self):
@@ -693,13 +692,18 @@ class Win(QtGui.QMainWindow):
             max_value = self.map_ext_dialog.max_spin.value()
             self.map_ext_dialog.min_spin.setValue(max_value)
             self.map_ext_dialog.max_spin.setValue(min_value)
+        def resetValues():
+            self.map_ext_dialog.min_spin.setValue(0)
+            self.map_ext_dialog.max_spin.setValue(127)
+            self.map_ext_dialog.accept()
         invert_btn.clicked.connect(invertValues)
         grid.addWidget(invert_btn, 3, 1)
 
-        button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
+        button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Reset)
         grid.addWidget(button_box, 4, 0, 1, 2)
         button_box.accepted.connect(self.map_ext_dialog.accept)
         button_box.rejected.connect(self.map_ext_dialog.reject)
+        button_box.button(QtGui.QDialogButtonBox.Reset).clicked.connect(resetValues)
         def setTextData(widget, ext):
 #            widget = widget_data.inst
 #            ext = widget_data.ext
@@ -722,25 +726,9 @@ class Win(QtGui.QMainWindow):
         self.automap_chkbtn.toggled.connect(self.automap_set)
 
         for widget in self.widget_order:
-            map_action = QtGui.QAction('Map', widget)
-            map_action.triggered.connect(self.single_map_start)
-            widget.addAction(map_action)
-            widget.map_action = map_action
-            ext_action = QtGui.QAction('Set range', widget)
-            ext_action.triggered.connect(self.single_map_ext)
-            widget.addAction(ext_action)
-            clear_action = QtGui.QAction('Clear', widget)
-            clear_action.triggered.connect(self.single_map_clear)
-            widget.addAction(clear_action)
-            #TODO: not important, disable if not set
-            if isinstance(widget, QtGui.QPushButton):
-                toggle_action = QtGui.QAction('Toggle', widget)
-                toggle_action.setCheckable(True)
-                toggle_action.triggered.connect(self.single_map_toggle_set)
-                widget.addAction(toggle_action)
-                widget.toggle_action = toggle_action
-            else:
-                widget.toggle_action = None
+            widget.customContextMenuRequested.connect(self.mapping_widget_menu)
+            if not isinstance(widget, QtGui.QPushButton):
+                widget.siblingLabel.customContextMenuRequested.connect(self.mapping_widget_menu)
 
 #        led_list = [(i, 0) for i in range(48)]
 #        set_led(0, *led_list)
@@ -782,14 +770,45 @@ class Win(QtGui.QMainWindow):
         if not any([True if len(d) else False for d in self.map_dict.values()]):
             self.savemap_btn.setEnabled(False)
 
-        for widget in self.map_dict[0].values():
-            widget.inst.map_action.setText('Remap')
-            if isinstance(widget.inst, QtGui.QPushButton):
-#                widget.inst.toggle_action.setCheckable(True)
-                if widget.mode == Toggle:
-                    widget.inst.toggle_action.setChecked(True)
-#                    widget.inst.setCheckable(True)
+#        for widget in self.map_dict[0].values():
+#            widget.inst.map_action.setText('Remap')
+#            if isinstance(widget.inst, QtGui.QPushButton):
+##                widget.inst.toggle_action.setCheckable(True)
+#                if widget.mode == Toggle:
+#                    widget.inst.toggle_action.setChecked(True)
+##                    widget.inst.setCheckable(True)
 
+    def mapping_widget_menu(self, pos):
+        sender_widget = self.sender()
+        if isinstance(sender_widget, QtGui.QLabel):
+            widget = sender_widget.siblingWidget
+        else:
+            widget = sender_widget
+        widget_event = None
+        for event, widget_data in self.map_dict[self.template].items():
+            if widget_data.inst == widget:
+                widget_event = event
+                break
+        menu = QtGui.QMenu(self)
+        map_action = QtGui.QAction(widget)
+        ext_action = QtGui.QAction('Set range', widget)
+        clear_action = QtGui.QAction('Clear', widget)
+        if not widget_event:
+            map_action.setText('Map')
+            ext_action.setEnabled(False)
+            clear_action.setEnabled(False)
+        else:
+            map_action.setText('Remap')
+        map_action.triggered.connect(self.single_map_start)
+        ext_action.triggered.connect(self.single_map_ext)
+        clear_action.triggered.connect(self.single_map_clear)
+        menu.addActions([map_action, ext_action, clear_action])
+        if isinstance(widget, QtGui.QPushButton):
+            toggle_action = QtGui.QAction('Toggle', widget)
+            toggle_action.setCheckable(True)
+            toggle_action.triggered.connect(self.single_map_toggle_set)
+            menu.addAction(toggle_action)
+        menu.exec_(sender_widget.mapToGlobal(pos))
 
     def mapping_template_clear(self):
         if not len(self.map_dict[self.template]):
@@ -800,9 +819,7 @@ class Win(QtGui.QMainWindow):
             self.map_dict[self.template] = {}
             for widget in self.widget_order:
                 widget.siblingLabel.setText('')
-                widget.map_action.setText('Map')
                 if isinstance(widget, QtGui.QPushButton):
-                    widget.toggle_action.setChecked(False)
                     setBold(widget, False)
             set_led(self.template, *[(i, 0) for i in range(48)])
             setBold(self.temp_id_group.button(self.template), False)
@@ -849,11 +866,8 @@ class Win(QtGui.QMainWindow):
             sender_widget = self.sender().parent()
         if sender_widget not in [w.inst for w in self.map_dict[self.template].values()]:
             return
-        sender_widget.map_action.setText('Map')
         sender_widget.siblingLabel.setText('')
         setBold(sender_widget, False)
-        if isinstance(sender_widget, QtGui.QPushButton):
-            sender_widget.toggle_action.setChecked(False)
         for ctrl, widget in self.map_dict[self.template].items():
             if widget.inst == sender_widget:
                 break
@@ -961,13 +975,10 @@ class Win(QtGui.QMainWindow):
                 label = widget.siblingLabel
                 if widget not in [w.inst for w in self.map_dict[self.template].values()]:
                     label.setText('')
-                    widget.map_action.setText('Map')
                     if not start_set:
                         widget.setFocus(True)
                         start = i
                         start_set = True
-                else:
-                    widget.map_action.setText('Remap')
             self.automap_current = start
             if self.automap_current == len(self.widget_order):
                 return
@@ -1033,7 +1044,6 @@ class Win(QtGui.QMainWindow):
                         setBold(widget, False)
                 self.map_dict[self.template][(event.channel, event_type, event.data1)] = Widget(widget, ext, mode)
                 widget.siblingLabel.setText('Ch{},{}{}'.format(event.channel, 'CC' if event_type == md.CTRL else 'N', event.data1))
-                widget.map_action.setText('Remap')
                 if widget.siblingLed is not None:
                     set_led(self.template, (widget.siblingLed, 0x30 if widget.siblingLed<40 else 0x33))
                 else:
@@ -1112,7 +1122,6 @@ class Win(QtGui.QMainWindow):
                             del self.map_dict[self.template][c]
                             break
                 self.map_dict[self.template][(event.channel, event_type, event.data1)] = Widget(widget, True, mode)
-                widget.map_action.setText('Remap')
                 widget.siblingLabel.setText('Ch{},{}{}'.format(event.channel, 'CC' if event_type == md.CTRL else 'N', event.data1))
                 if widget.siblingLed is not None:
                     set_led(self.template, (widget.siblingLed, widget.ledSet))
@@ -1614,9 +1623,7 @@ class Win(QtGui.QMainWindow):
                     channel, ctrl, data1 = event
                     widget.siblingLabel.setText('Ch{},{}{}'.format(channel, 'CC' if ctrl == md.CTRL else 'N', data1))
                     try:
-                        widget.map_action.setText('Remap')
                         if isinstance(widget, QtGui.QPushButton):
-                            widget.toggle_action.setChecked(True if mode==Toggle else False)
                             setBold(widget, True if mode==Toggle else False)
 #                            widget.setCheckable(True if mode==Toggle else False)
                     except:
@@ -1624,9 +1631,7 @@ class Win(QtGui.QMainWindow):
                 else:
                     widget.siblingLabel.setText('')
                     try:
-                        widget.map_action.setText('Map')
                         if isinstance(widget, QtGui.QPushButton):
-                            widget.toggle_action.setChecked(False)
                             setBold(widget, False)
 #                            widget.setCheckable(False)
                     except:
