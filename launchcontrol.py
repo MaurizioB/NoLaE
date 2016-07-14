@@ -1799,41 +1799,6 @@ class Win(QtGui.QMainWindow):
             widget.customContextMenuRequested.connect(self.editor_widget_menu)
             if not isinstance(widget, QtGui.QPushButton):
                 widget.siblingLabel.customContextMenuRequested.connect(self.editor_widget_menu)
-#            ext_action = QtGui.QAction('Edit controller', widget)
-#            ext_action.triggered.connect(self.editor_widget_edit)
-#            widget.addAction(ext_action)
-#            clear_action = QtGui.QAction('Clear controller', widget)
-#            clear_action.triggered.connect(self.editor_widget_clear)
-#            widget.addAction(clear_action)
-#            #TODO: not important, disable if not set
-#            if isinstance(widget, QtGui.QPushButton):
-#                toggle_action = QtGui.QAction('Toggle', widget)
-#                toggle_action.setCheckable(True)
-#                toggle_action.triggered.connect(self.editor_widget_toggle_set)
-#                widget.addAction(toggle_action)
-#                widget.toggle_action = toggle_action
-#            else:
-#                widget.toggle_action = None
-#            separator = QtGui.QAction('', widget)
-#            separator.setSeparator(True)
-#            widget.addAction(separator)
-#            copy_action = QtGui.QAction('Copy controller', widget)
-#            copy_action.triggered.connect(self.editor_widget_copy)
-#            widget.addAction(copy_action)
-#            cut_action = QtGui.QAction('Copy controller', widget)
-#            cut_action.triggered.connect(self.editor_widget_cut)
-#            widget.addAction(cut_action)
-#            paste_action = QtGui.QAction('Paste controller', widget)
-#            paste_action.triggered.connect(self.editor_widget_paste)
-#            paste_action.setEnabled(False)
-#            widget.addAction(paste_action)
-#            widget.paste_action = paste_action
-#            swap_action = QtGui.QAction('Swap controller', widget)
-#            swap_action.triggered.connect(self.editor_widget_swap)
-#            swap_action.setEnabled(False)
-#            widget.addAction(swap_action)
-#            widget.swap_action = swap_action
-#            [widget.siblingLabel.addAction(action) for action in widget.actions()]
 
         app = QtCore.QCoreApplication.instance()
         app.installEventFilter(self)
@@ -2552,7 +2517,7 @@ class Win(QtGui.QMainWindow):
                             if v == 0:
                                 widget_data.pop('chan')
                         elif k == 'convert':
-                            if v != True:
+                            if v == False:
                                 widget_data.pop('convert')
                                 try:
                                     widget_data.pop('convert_type')

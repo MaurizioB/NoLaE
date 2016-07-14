@@ -300,6 +300,9 @@ class EditorWin(QtGui.QMainWindow):
     def event(self, event):
         if event.type() == QtCore.QEvent.WindowDeactivate:
             self.widget_save()
+        elif event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_S and QtGui.QApplication.keyboardModifiers() == QtCore.Qt.ControlModifier:
+            self.widget_save()
+            self.main.config_write()
         return QtGui.QMainWindow.event(self, event)
 
     def patch_templates_menu_create(self):
@@ -841,7 +844,6 @@ class EditorWin(QtGui.QMainWindow):
         if not self.isVisible():
             return
         #Prepare editor window
-        print self.main.map_dict[self.main.template].get(widget)
         self.status_update(self.main.map_dict[self.main.template].get(widget))
         self.base_group.setTitle('Base configuration: {}'.format(widget.readable))
         led_index = self.led_combo.currentIndex()
