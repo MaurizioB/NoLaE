@@ -80,8 +80,10 @@ class Win(QtGui.QMainWindow):
                 saveAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_DialogSaveButton), '&Save mapping', self)
                 saveAction.setShortcut('Ctrl+S')
                 saveAction.triggered.connect(self.map_save)
-#                self.setWindowTitle('{} - Mapping'.format(prog_name))
-#                self.title_set()
+                saveAsAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_DialogSaveButton), '&Save mapping as...', self)
+                saveAsAction.triggered.connect(self.map_save_as)
+                self.file_menu.addActions([saveAction, saveAsAction])
+                self.file_menu.addSeparator()
                 self.template_clear_action = QtGui.QAction('Clear template', self)
                 self.template_clear_action.triggered.connect(self.mapping_template_clear)
                 self.template_menu.addAction(self.template_clear_action)
@@ -89,11 +91,8 @@ class Win(QtGui.QMainWindow):
                 self.showmap_btn.clicked.connect(self.show_map)
                 self.operation_start = self.mapping_start
                 self.router.template_change.connect(self.template_remote_set)
-                self.file_menu.addAction(saveAction)
                 self.dataChanged.connect(self.data_changed)
             else:
-#                self.setWindowTitle('{} - Live'.format(prog_name))
-#                self.title_set()
                 self.template_menu.setEnabled(False)
                 self.scenes, out_ports = self.routing_setup()
                 self.router.set_config(self.scenes, out_ports=out_ports)
@@ -104,13 +103,14 @@ class Win(QtGui.QMainWindow):
             while not md.engine.active():
                 pass
             self.startupbox_run()
-#            self.template_connect(mode)
         else:
-#            self.conf_dict = {}
             saveAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_DialogSaveButton), '&Save config', self)
             saveAction.setShortcut('Ctrl+S')
-            saveAction.triggered.connect(self.config_write)
-            self.file_menu.addAction(saveAction)
+            saveAction.triggered.connect(self.config_save)
+            saveAsAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_DialogSaveButton), '&Save config as...', self)
+            saveAsAction.triggered.connect(self.config_save_as)
+            self.file_menu.addActions([saveAction, saveAsAction])
+            self.file_menu.addSeparator()
             self.template_clipboard = None
             self.template_clipcut = False
             self.widget_clipboard = None
@@ -823,6 +823,7 @@ class Win(QtGui.QMainWindow):
                     setBold(widget, False)
             set_led(self.template, *[(i, 0) for i in range(48)])
             setBold(self.temp_id_group.button(self.template), False)
+            self.dataChanged.emit()
 
     def enable_template_buttons(self, state):
         for btn in self.temp_id_group.buttons():
@@ -877,6 +878,7 @@ class Win(QtGui.QMainWindow):
         if not any([True if len(d) else False for d in self.map_dict.values()]):
             self.savemap_btn.setEnabled(False)
         self.map_template_check()
+        self.dataChanged.emit()
 
     def single_map_toggle_set(self, value, widget=None):
         if widget:
@@ -960,7 +962,6 @@ class Win(QtGui.QMainWindow):
         if self.sender() == self.automap_chkbtn:
             for btn in self.widget_order[32:]:
                 btn.setDown(False)
-#                self.automap_previous = None
         self.automap_enabled = state
         if not isinstance(self.sender(), QtGui.QPushButton):
             self.automap_chkbtn.setEnabled(True)
@@ -1007,19 +1008,10 @@ class Win(QtGui.QMainWindow):
             else:
                 event_type = event.type
             if (event.channel, event_type, event.data1) not in self.map_dict[self.template]:
-#                if self.automap_previous:
-#                    prev_template, prev_event = self.automap_previous
-#                    prev_widget_data = self.map_dict[prev_template][prev_event]
-#                    if prev_widget_data.inst.isDown():
-#                        self.map_dict[prev_template][prev_event] = Widget(prev_widget_data.inst, prev_widget_data.ext, Toggle)
-##                        print '{} is toggle'.format(prev_widget_data.inst.readable)
-#                        prev_widget_data.inst.setDown(False)
-#                        set_led(prev_template, (prev_widget_data.inst.siblingLed, prev_widget_data.inst.ledSet))
                 widget = self.widget_order[self.automap_current]
                 if not isinstance(widget, QtGui.QPushButton):
                     ext = True
                     mode = Value
-#                    self.automap_previous = None
                 else:
                     #TODO: finish checking for different button types
                     if not self.map_toggle_check:
@@ -1033,7 +1025,6 @@ class Win(QtGui.QMainWindow):
                     widget.setDown(False)
                     ext = event.data2, self.map_toggle_check[-1]
                     self.map_toggle_check = None
-                    print ext
                     if ext == (0, 127):
                         ext = True
                     if QtGui.QApplication.keyboardModifiers() == QtCore.Qt.ShiftModifier:
@@ -1049,6 +1040,8 @@ class Win(QtGui.QMainWindow):
                 else:
                     fader = int(str(widget.objectName())[-1])
                     set_led(self.template, (fader+24, 0), (fader+32, 0))
+                self.dataChanged.emit()
+
                 self.automap_current += 1
                 if self.automap_current == len(self.widget_order):
                     if self.automap_cont_chk.isChecked() and self.template < 15:
@@ -1078,7 +1071,6 @@ class Win(QtGui.QMainWindow):
                 return
 
         elif self.singlemap_enabled and not self.map_confirm.isVisible():
-            print 'son qui'
             self.map_dialog.done(True)
             if event.type in [md.NOTEON, md.NOTEOFF]:
                 event_type = md.NOTE
@@ -1136,6 +1128,7 @@ class Win(QtGui.QMainWindow):
     #                set_led(self.template, (fader+24, 0), (fader+32, 0))
             self.singlemap_enabled = False
             self.map_template_check()
+            self.dataChanged.emit()
 
         widget = self.map_dict[self.template].get((event.channel, md.NOTE if event.type in [md.NOTEON, md.NOTEOFF] else event.type, event.data1))
         if widget:
@@ -1256,29 +1249,42 @@ class Win(QtGui.QMainWindow):
         for p in pairing:
             print p
 
+    def map_save_as(self):
+        if not any([True if len(d) else False for d in self.map_dict.values()]):
+            return
+        save_file = QtGui.QFileDialog.getSaveFileName(self, 'Save mapping to file', self.map_file if self.map_file else '', 'LaunchPad mappings (*.nlm)')
+        if not save_file:
+            return
+        self.map_write(str(save_file))
+
     def map_save(self):
         if not any([True if len(d) else False for d in self.map_dict.values()]):
             return
-        savemap = QtGui.QFileDialog.getSaveFileName(self, 'Save mapping to file', self.map_file if self.map_file else '', 'LaunchPad mappings (*.nlm)')
-        if savemap:
-            full_map = ['{']
-            for template, mapping in self.map_dict.items():
-                if len(mapping):
-                    full_map.append('{}: {{\n\n'.format(template))
-#                    for ctrl, widget in self.map_dict[template].items():
-#                        full_map.append('({},{},{}):\'{}\','.format(ctrl[0], 'CTRL' if ctrl[1] == md.CTRL else 'NOTE', ctrl[2], (widget.inst.objectName(), widget.ext, widget.mode)))
-#                    this method differs from the above since it _should_ write the values using the widget_order list
-                    temp_dict = {}
-                    for ctrl, widget in self.map_dict[template].items():
-                        temp_dict[widget.inst] = '\t({},{},{}): {},\n'.format(ctrl[0], 'CTRL' if ctrl[1] == md.CTRL else 'NOTE', ctrl[2], (str(widget.inst.objectName()), widget.ext, widget.mode))
-                    for widget in self.widget_order:
-                        if widget in temp_dict:
-                            full_map.append(temp_dict[widget])
-                    full_map.append('},\n\n')
-            full_map.append('}\n')
-            with open(savemap, 'w') as fo:
-                for line in full_map:
-                    fo.write(line)
+        if not self.map_file:
+            self.map_save_as()
+        else:
+            self.map_write(self.map_file)
+
+    def map_write(self, save_file=None):
+        if not save_file:
+            return
+        full_map = ['{']
+        for template, mapping in self.map_dict.items():
+            if len(mapping):
+                full_map.append('{}: {{\n\n'.format(template))
+                temp_dict = {}
+                for ctrl, widget in self.map_dict[template].items():
+                    temp_dict[widget.inst] = '\t({},{},{}): {},\n'.format(ctrl[0], 'CTRL' if ctrl[1] == md.CTRL else 'NOTE', ctrl[2], (str(widget.inst.objectName()), widget.ext, widget.mode))
+                for widget in self.widget_order:
+                    if widget in temp_dict:
+                        full_map.append(temp_dict[widget])
+                full_map.append('},\n\n')
+        full_map.append('}\n')
+        with open(save_file, 'w') as fo:
+            for line in full_map:
+                fo.write(line)
+        self.map_file = save_file
+        self.title_set()
         
     def routing_setup(self):
         mapping_raw = ''
@@ -1566,6 +1572,22 @@ class Win(QtGui.QMainWindow):
             btn.toggled.connect(update_func)
             btn.state = None
             self.temp_id_group.setId(btn, b)
+        for t in range(1, 9):
+            ut_action = QtGui.QAction(self)
+            ut_action.setShortcut('Alt+{}'.format(t))
+            ut_action.triggered.connect(lambda x, t=t: self.template_shortcut(t-1))
+            ft_action = QtGui.QAction(self)
+            ft_action.setShortcut('Alt+Shift+{}'.format(t))
+            ft_action.triggered.connect(lambda x, t=t: self.template_shortcut(t+7))
+            self.addActions([ut_action, ft_action])
+
+    def template_shortcut(self, template):
+        self.temp_id_group.button(template).setChecked(True)
+        if self.templates_tab.currentWidget() != self.all_tab:
+            if template < 8:
+                self.templates_tab.setCurrentWidget(self.user_tab)
+            else:
+                self.templates_tab.setCurrentWidget(self.fact_tab)
 
     def template_manual_update(self, toggle):
         if toggle == False:
@@ -2340,10 +2362,11 @@ class Win(QtGui.QMainWindow):
             widget = sender_widget.siblingWidget
         else:
             widget = sender_widget
+        widget_dict = self.conf_dict[self.template].get(widget)
         menu = QtGui.QMenu(self)
-        ext_action = QtGui.QAction('Edit controller', widget)
-        ext_action.triggered.connect(self.editor_widget_edit)
-        menu.addAction(ext_action)
+        edit_action = QtGui.QAction('Edit controller', widget)
+        edit_action.triggered.connect(self.editor_widget_edit)
+        menu.addAction(edit_action)
         clear_action = QtGui.QAction('Clear controller', widget)
         clear_action.triggered.connect(self.editor_widget_clear)
         menu.addAction(clear_action)
@@ -2374,6 +2397,8 @@ class Win(QtGui.QMainWindow):
             swap_action = QtGui.QAction('Swap controller', widget)
             swap_action.setEnabled(False)
         menu.addActions([copy_action, cut_action, paste_action, swap_action])
+        if widget_dict is None:
+            [action.setEnabled(False) for action in [clear_action, copy_action, cut_action]]
         menu.exec_(sender_widget.mapToGlobal(pos))
 
     def editor_widget_clear(self, *args):
@@ -2385,6 +2410,7 @@ class Win(QtGui.QMainWindow):
         if self.editor_win.current_widget and self.editor_win.current_widget.get('widget') == sender_widget:
             self.editor_win.current_widget = None
             self.editor_win.clear_fields()
+        self.dataChanged.emit()
 
     def editor_widget_toggle_set(self, value):
         sender_widget = self.sender().parent()
@@ -2403,6 +2429,7 @@ class Win(QtGui.QMainWindow):
         sender_widget = self.sender().parent()
         self.widgetChanged.emit(sender_widget)
         self.editor_win.show()
+        self.editor_win.activateWindow()
 
     def editor_widget_copy(self, widget, cut=False):
         if not self.conf_dict[self.template][widget]:
@@ -2434,6 +2461,7 @@ class Win(QtGui.QMainWindow):
             self.widget_clipboard = None
             self.widget_clipcut = False
         self.widgetUpdated.emit(dest_widget, True)
+        self.dataChanged.emit()
 
     def editor_widget_swap(self, dest_widget):
         source_widget, source_template = self.widget_clipboard
@@ -2462,6 +2490,7 @@ class Win(QtGui.QMainWindow):
         self.widget_clipcut = False
         if self.editor_win.current_widget and self.editor_win.current_widget['widget'] in [source_widget, dest_widget]:
             self.widgetUpdated.emit(self.editor_win.current_widget['widget'], True)
+        self.dataChanged.emit()
 
     def editor_template_check(self, template=None):
         if not template:
@@ -2483,23 +2512,23 @@ class Win(QtGui.QMainWindow):
         item.setForeground(QtCore.Qt.gray)
         setBold(item, False)
 
-    def config_save(self):
+    def config_save_as(self):
         self.editor_win.widget_save(self.template)
         save_file = QtGui.QFileDialog.getSaveFileName(self, 'Save config to file', self.config if self.config else '', 'LaunchPad config (*.nlc)')
         if not save_file:
             return
         self.config_write(str(save_file))
 
+    def config_save(self):
+        self.editor_win.widget_save(self.template)
+        if not self.config:
+            self.config_save_as()
+        else:
+            self.config_write(self.config)
 
     def config_write(self, save_file=None):
-        if self.config:
-            save_file = self.config
-        elif not save_file:
-            self.editor_win.widget_save(self.template)
-            save_file = QtGui.QFileDialog.getSaveFileName(self, 'Save config to file', self.config if self.config else '', 'LaunchPad config (*.nlc)')
-            if not save_file:
-                return
-            save_file = str(save_file)
+        if not save_file:
+            return
         conf_dict = OrderedDict()
         output_list = []
         for id in range(self.output_model.rowCount()):
@@ -2595,8 +2624,9 @@ class Win(QtGui.QMainWindow):
         dict_str += '}'
         with open(save_file, 'w') as fo:
             fo.write(dict_str)
-        self.setWindowTitle('{} - Editor ({})'.format(prog_name, path_basename(save_file)))
+#        self.setWindowTitle('{} - Editor ({})'.format(prog_name, path_basename(save_file)))
         self.config = save_file
+        self.title_set()
 
     def closeEvent(self, event):
         if self.router:

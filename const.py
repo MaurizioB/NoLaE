@@ -1,4 +1,5 @@
 import string, re
+from PyQt4 import QtCore
 
 class ReprConst(object):
     def __init__(self):
@@ -64,5 +65,7 @@ Disabled, Enabled, Triggered = (Const() for i in range(3))
 GroupMode, DestMode = (Const() for i in range(2))
 MapMode, EditMode, LiveMode = (Const() for i in range(3))
 modedict = {'mapping': MapMode, 'editor': EditMode, 'live': LiveMode}
+
+NumKeys = [getattr(QtCore.Qt, 'Key_{}'.format(i)) for i in range(10)]
 
 MAPCTRL = 0

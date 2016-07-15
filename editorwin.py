@@ -86,6 +86,11 @@ class EditorWin(QtGui.QMainWindow):
         self.led_dialog.setModal(True)
         self.sysex_dialog = SysExDialog(self)
         self.sysex_dialog.setModal(True)
+        saveAction = QtGui.QAction(self)
+        saveAction.setShortcut('Ctrl+s')
+        saveAction.triggered.connect(self.main_save)
+        self.addAction(saveAction)
+
 
     def toggle_chk_wheelEvent(self, event):
         if event.orientation() == QtCore.Qt.Vertical:
@@ -300,10 +305,13 @@ class EditorWin(QtGui.QMainWindow):
     def event(self, event):
         if event.type() == QtCore.QEvent.WindowDeactivate:
             self.widget_save()
-        elif event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_S and QtGui.QApplication.keyboardModifiers() == QtCore.Qt.ControlModifier:
-            self.widget_save()
-            self.main.config_write()
         return QtGui.QMainWindow.event(self, event)
+
+    def main_save(self, *args):
+        self.widget_save()
+        self.main.config_save()
+        self.main.title_set()
+
 
     def patch_templates_menu_create(self):
         action_dict = [(
@@ -897,6 +905,8 @@ class EditorWin(QtGui.QMainWindow):
             self.convert_ctrl_radio.setChecked(True)
             self.text_edit.setText('')
             self.labelChanged.emit(widget, False)
+            
+            self.enable_chk.setFocus()
             return
 
         widget_dict['widget'] = widget
