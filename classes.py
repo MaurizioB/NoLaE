@@ -142,6 +142,8 @@ class SignalClass(object):
     def trigger(self, value):
 #        self.action(event)
         self.led_action(value)
+        self.text = self.basetext.format(self.value)
+        self.widget.siblingLabel.setText(self.text)
 
 
 class TemplateClass(object):

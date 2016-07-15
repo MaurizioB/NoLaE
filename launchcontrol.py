@@ -139,7 +139,7 @@ class Win(QtGui.QMainWindow):
             swap_action = QtGui.QAction('Swap', self)
             swap_action.baseText = 'Swap'
             swap_action.preText = 'with'
-            swap_action.triggered.connect(lambda: self.template_swap(dest_template=self.template))
+            swap_action.triggered.connect(lambda: self.editor_template_swap(dest_template=self.template))
             swap_action.setEnabled(False)
             self.template_menu.addAction(swap_action)
             self.template_menu_actions = paste_action, replace_action, swap_action
@@ -164,6 +164,7 @@ class Win(QtGui.QMainWindow):
         self.help_menu.addAction(aboutQtAction)
 #        self.template_connect(mode)
 
+        self.unsaved = False
         self.operation_start()
         self.template_model_create()
         self.setFixedSize(self.width(), self.height())
@@ -188,6 +189,7 @@ class Win(QtGui.QMainWindow):
         self.simple.show()
 
     def title_set(self, changed=False):
+        self.unsaved = changed
         if self.mode == MapMode:
             post_text = ''
             if self.map_file:
@@ -358,7 +360,7 @@ class Win(QtGui.QMainWindow):
             swap_action = QtGui.QAction('Swap', self.template_listview)
             swap_action.baseText = 'Swap'
             swap_action.preText = 'with'
-            swap_action.triggered.connect(self.template_swap)
+            swap_action.triggered.connect(self.editor_template_swap)
             swap_action.setEnabled(False)
             self.template_listview.addAction(swap_action)
             self.template_actions = paste_action, replace_action, swap_action
@@ -516,7 +518,7 @@ class Win(QtGui.QMainWindow):
                 buttons=QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
             if res == QtGui.QMessageBox.No:
                 return
-                self.template_listview.setCurrentIndex(self.template_model.index(self.template, 0))
+            self.template_listview.setCurrentIndex(self.template_model.index(self.template, 0))
         self.conf_dict[template] = copy(self.conf_dict[self.template_clipboard])
 
         source_groups = self.template_groups[self.template_clipboard]
@@ -558,7 +560,7 @@ class Win(QtGui.QMainWindow):
             self.template_simple_update()
         self.template_listview.setCurrentIndex(self.template_model.index(self.template, 0))
 
-    def template_swap(self, toggle=None, dest_template=None):
+    def editor_template_swap(self, toggle=None, dest_template=None):
         if dest_template == None:
             dest_item = self.template_model.itemFromIndex(self.template_listview.currentIndex())
             dest_template = dest_item.id
@@ -1251,23 +1253,23 @@ class Win(QtGui.QMainWindow):
 
     def map_save_as(self):
         if not any([True if len(d) else False for d in self.map_dict.values()]):
-            return
+            return None
         save_file = QtGui.QFileDialog.getSaveFileName(self, 'Save mapping to file', self.map_file if self.map_file else '', 'LaunchPad mappings (*.nlm)')
         if not save_file:
-            return
-        self.map_write(str(save_file))
+            return False
+        return self.map_write(str(save_file))
 
     def map_save(self):
         if not any([True if len(d) else False for d in self.map_dict.values()]):
-            return
+            return None
         if not self.map_file:
-            self.map_save_as()
+            return self.map_save_as()
         else:
-            self.map_write(self.map_file)
+            return self.map_write(self.map_file)
 
     def map_write(self, save_file=None):
         if not save_file:
-            return
+            return None
         full_map = ['{']
         for template, mapping in self.map_dict.items():
             if len(mapping):
@@ -1285,6 +1287,7 @@ class Win(QtGui.QMainWindow):
                 fo.write(line)
         self.map_file = save_file
         self.title_set()
+        return True
         
     def routing_setup(self):
         mapping_raw = ''
@@ -2516,19 +2519,19 @@ class Win(QtGui.QMainWindow):
         self.editor_win.widget_save(self.template)
         save_file = QtGui.QFileDialog.getSaveFileName(self, 'Save config to file', self.config if self.config else '', 'LaunchPad config (*.nlc)')
         if not save_file:
-            return
-        self.config_write(str(save_file))
+            return None
+        return self.config_write(str(save_file))
 
     def config_save(self):
         self.editor_win.widget_save(self.template)
         if not self.config:
-            self.config_save_as()
+            return self.config_save_as()
         else:
-            self.config_write(self.config)
+            return self.config_write(self.config)
 
     def config_write(self, save_file=None):
         if not save_file:
-            return
+            return None
         conf_dict = OrderedDict()
         output_list = []
         for id in range(self.output_model.rowCount()):
@@ -2627,8 +2630,25 @@ class Win(QtGui.QMainWindow):
 #        self.setWindowTitle('{} - Editor ({})'.format(prog_name, path_basename(save_file)))
         self.config = save_file
         self.title_set()
+        return True
+
 
     def closeEvent(self, event):
+        if self.unsaved:
+            filetype = 'mapping' if self.mode==MapMode else 'configuration'
+            res = QtGui.QMessageBox.question(self, '{} not saved', 'Current {} has been modified, close anyway?'.format(filetype.title(), filetype), 
+                buttons=QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel | QtGui.QMessageBox.Save)
+            if res == QtGui.QMessageBox.Cancel:
+                event.ignore()
+                return
+            elif res == QtGui.QMessageBox.Save:
+                if self.mode == MapMode:
+                    newres = self.map_save()
+                else:
+                    newres = self.config_save()
+                if not newres:
+                    event.ignore()
+                    return
         if self.router:
             if md.engine.active():
                 self.router.quit()
