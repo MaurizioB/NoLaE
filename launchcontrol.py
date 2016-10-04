@@ -734,7 +734,8 @@ class Win(QtGui.QMainWindow):
 
 #        led_list = [(i, 0) for i in range(48)]
 #        set_led(0, *led_list)
-        set_led(0, *[(i, 0) for i in range(48)])
+#        set_led(0, *[(i, 0) for i in range(48)])
+        [md.engine.output_event(md.event.CtrlEvent(md.engine.out_ports()[-1], t, 0, 0)) for t in range(1, 17)]
         mapping_raw = ''
         if self.map_file != False:
             try:
@@ -1466,6 +1467,7 @@ class Win(QtGui.QMainWindow):
                     if chan is not None and not event_chan == chan:
                         patch = md.Channel(chan) >> patch
                 text = patch_data.get('text')
+                text_values = patch_data.get('text_values')
                 led = patch_data.get('led', True)
                 led_basevalue = patch_data.get('led_basevalue', Enabled)
                 led_action = patch_data.get('led_action', Pass)
@@ -1474,7 +1476,13 @@ class Win(QtGui.QMainWindow):
                         led_action = toggle_range
                     else:
                         led_action = Pass
-                current_config[event] = SignalClass(template, widget, ext, mode, dest=dest, patch=patch, text=text, led=led, led_basevalue=led_basevalue, led_action=led_action)
+                if vrange:
+                    range_mode = (range_start, range_end, range_type)
+                elif toggle:
+                    range_mode = toggle_range
+                else:
+                    range_mode = None
+                current_config[event] = SignalClass(template, widget, ext, mode, dest, patch, range_mode, text, text_values, led, led_basevalue, led_action)
             temp_map_dict[template] = current_config
 
         scenes = {}
@@ -1509,21 +1517,9 @@ class Win(QtGui.QMainWindow):
                     #TODO: Ottimizza sfruttando filtri per tutte le patch in Pass
                     if len(ctrl_dict) == 1:
                         if ctrl_dict.keys()[0] == md.CTRL:
-#                            scene = md.Split({md.CTRL: md.CtrlFilter((f for f in ctrl_dict.values()[0].keys())), md.NOTE: md.Discard()})
-                            filters = []
-                            patches = []
-                            for f, s in ctrl_dict.values()[0].items():
-                                filters.append(f)
-                                patches.append(s.patch)
-                            scene = md.Split({md.CTRL: md.CtrlFilter(ctrls=filters) >> patches})
+                            scene = md.Split({md.CTRL: md.CtrlSplit({f:s.patch for f, s in ctrl_dict[md.CTRL].items()})})
                         else:
-#                            scene = md.Split({md.NOTE: md.KeyFilter(notes=[f for f in ctrl_dict[md.NOTE].keys()]), md.CTRL: md.Discard()})
-                            filters = []
-                            patches = []
-                            for f, s in ctrl_dict[md.NOTE].items():
-                                filters.append(f)
-                                patches.append(s.patch)
-                            scene = md.Split({md.NOTE: md.KeyFilter(notes=filters) >> patches })
+                            scene = md.Split({md.NOTE: md.KeySplit({f:s.patch for f, s in ctrl_dict[md.NOTE].items()})})
                     else:
                         scene = md.Split({md.CTRL: md.CtrlSplit({f:s.patch for f, s in ctrl_dict[md.CTRL].items()}), 
                                           md.NOTE: md.KeySplit({f:s.patch for f, s in ctrl_dict[md.NOTE].items()})})
@@ -1704,7 +1700,8 @@ class Win(QtGui.QMainWindow):
         if not self.template_list[0].enabled:
             #TODO: NO! devi proseguire!
             return
-        set_led(0, *[(i, 0) for i in range(48)])
+#        set_led(0, *[(i, 0) for i in range(48)])
+        [md.engine.output_event(md.event.CtrlEvent(md.engine.out_ports()[-1], t, 0, 0)) for t in range(1, 17)]
         led_list = []
         for id, signal in enumerate(self.template_list[0].widget_list):
             widget = self.widget_order[id]
@@ -2601,8 +2598,11 @@ class Win(QtGui.QMainWindow):
                         elif k == 'led':
                             if v == True:
                                 widget_data.pop('led')
-                        elif k == 'led_basevalue' and v == Enabled:
-                            widget_data.pop('led_basevalue')
+                        elif k == 'led_basevalue':
+                            if v == Enabled:
+                                widget_data.pop('led_basevalue')
+                            elif v == Disabled:
+                                widget_data['led_basevalue'] = 0
                         elif k == 'led_action' and v == Pass:
                             widget_data.pop('led_action')
                         elif k == 'patch' and (not len(v) or v == 'Pass()'):
@@ -2662,6 +2662,7 @@ class Win(QtGui.QMainWindow):
 def main():
     app = QtGui.QApplication(sys.argv)
     args = process_args()
+    QtCore.qInstallMsgHandler(MsgHandler)
     win = Win(mode=args.mode, map_file=args.mapfile, config=args.config, backend=args.backend)
     win.start(args.simple)
 #    win.show()

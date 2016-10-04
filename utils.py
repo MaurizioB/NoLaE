@@ -1,7 +1,11 @@
 from PyQt4 import QtCore, QtGui
 from const import str_allowed, dev_scale, dir_scale, md_replace, md_replace_pattern
 import mididings as md
+from mididings.extra.osc import SendOSC
 import re
+
+def MsgHandler(level, msg):
+    print msg
 
 def str_check(text):
     if isinstance(text, QtCore.QString):
@@ -92,7 +96,7 @@ def patch_parse(patch, event, template, out_ports):
         return eval(patch)
     except Exception as err:
         print err
-        print 'Patch:\t'.format(patch)
+        print 'Patchh:\t'.format(patch)
         return md.Pass()
 
 

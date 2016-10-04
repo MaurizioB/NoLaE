@@ -43,7 +43,7 @@ class MyCycle(int, object):
 
 
 class SignalClass(object):
-    def __init__(self, template, widget, ext=True, mode=Value, dest=Pass, patch=md.Pass(), text=None, led=True, led_basevalue=Enabled, led_action=Pass):
+    def __init__(self, template, widget, ext=True, mode=Value, dest=Pass, patch=md.Pass(), range_mode=None, text=None, text_values=None, led=True, led_basevalue=Enabled, led_action=Pass):
         self.widget = widget
         self.inst = widget
         self.template = template
@@ -53,9 +53,26 @@ class SignalClass(object):
         self.value = self.ext[0]
         self.dest = dest
         self.patch = patch
+        self.range_mode = range_mode
         self.label = widget.siblingLabel
         self.basetext = text if text else ''
-        self.text = self.basetext.format(self.value)
+        if not text_values and not '{}' in self.basetext:
+            self.text = self.basetext.format(self.value)
+            self.text_values = ['']
+            self.trigger = self.base_trigger
+        else:
+            if text_values:
+                self.text_values = text_values
+            else:
+#                print self.range_mode
+#                if isinstance(self.range_mode, tuple):
+#                    self.text_values = range(self.range_mode[0], self.range_mode[1]+1)
+#                elif isinstance(self.range_mode, MyCycle):
+#                    print 'staminchia: {}'.format(self.range_mode.values)
+#                else:
+                    self.text_values = range(128)
+            self.text = self.basetext.format(self.text_values[0])
+            self.trigger = self.interactive_trigger
         if led is True:
             if widget.siblingLed is not None:
                 self.led = widget.siblingLed
@@ -139,10 +156,15 @@ class SignalClass(object):
         else:
             self.led_action = self.led_ignore_action
 
-    def trigger(self, value):
-#        self.action(event)
+    def base_trigger(self, value):
         self.led_action(value)
-        self.text = self.basetext.format(self.value)
+
+    def interactive_trigger(self, value):
+        self.led_action(value)
+        try:
+            self.text = self.basetext.format(self.text_values[value])
+        except:
+            self.text = self.basetext.format(self.text_values[-1])
         self.widget.siblingLabel.setText(self.text)
 
 
