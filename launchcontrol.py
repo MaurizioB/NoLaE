@@ -846,7 +846,7 @@ class Win(QtGui.QMainWindow):
                         if t.enabled:
                             break
                     self.temp_id_group.button(i).setChecked(True)
-                    if t >= 8:
+                    if i >= 8:
                         self.templates_tab.setCurrentIndex(1)
                 return
             self.startupbox_setText(template_iter)
@@ -2457,6 +2457,10 @@ class Win(QtGui.QMainWindow):
             if res != QtGui.QMessageBox.Yes:
                 return
         self.conf_dict[self.template][dest_widget] = copy(self.conf_dict[source_template][source_widget])
+        try:
+            self.conf_dict[self.template][dest_widget].pop('toggle_model')
+        except:
+            pass
 #        dest_widget.siblingLabel.setText(self.conf_dict[self.template][dest_widget])
         if self.widget_clipcut:
             self.conf_dict[source_template][source_widget] = None
@@ -2652,6 +2656,8 @@ class Win(QtGui.QMainWindow):
                 if not newres:
                     event.ignore()
                     return
+        if self.mode == LiveMode:
+            [md.engine.output_event(md.event.CtrlEvent(md.engine.out_ports()[-1], t.id+1, 0, 0)) for t in self.template_list if t.enabled]
         if self.router:
             if md.engine.active():
                 self.router.quit()
