@@ -841,6 +841,13 @@ class Win(QtGui.QMainWindow):
                 self.enable_template_buttons(True)
                 self.automap_chkbtn.setEnabled(True)
                 self.startup_box.done(True)
+                if self.mode == LiveMode:
+                    for i, t in enumerate(self.template_list):
+                        if t.enabled:
+                            break
+                    self.temp_id_group.button(i).setChecked(True)
+                    if t >= 8:
+                        self.templates_tab.setCurrentIndex(1)
                 return
             self.startupbox_setText(template_iter)
 
@@ -1524,7 +1531,7 @@ class Win(QtGui.QMainWindow):
                         scene = md.Split({md.CTRL: md.CtrlSplit({f:s.patch for f, s in ctrl_dict[md.CTRL].items()}), 
                                           md.NOTE: md.KeySplit({f:s.patch for f, s in ctrl_dict[md.NOTE].items()})})
                     if dest_list.keys()[0] != 1:
-                         scene = md.Port(dest_list.keys()[0]) >> scene
+                        scene = md.Port(dest_list.keys()[0]) >> scene
                     chan_split_dict[chan] = scene
                 if len(chan_split_dict) == 1:
                     map_chans = [event[0] for event in self.map_dict[template].keys()]
@@ -1544,16 +1551,15 @@ class Win(QtGui.QMainWindow):
                 if scene_dict.keys()[0] == 1:
                     template_scene = scene_dict.values()[0]
                 else:
-                    template_scene = scene_dict.values()[0] >> md.Port(scene_dict.keys()[0])
+                    template_scene = md.Port(scene_dict.keys()[0]) >> scene_dict.values()[0]
             else:
                 temp_patch_dict = {}
                 for dest, patch in scene_dict.items():
                     temp_patch_dict[dest] = patch
-                template_scene = [temp_patch_dict[dest] >> md.Port(dest) for dest in temp_patch_dict.keys()]
+                template_scene = [md.Port(dest) >> temp_patch_dict[dest] for dest in temp_patch_dict.keys()]
             #TODO: implement name inside TemplateClass
             template_id = self.template_list[template].name
             scenes[template+1] = md.Scene('{} template {}'.format(*template_str(template)) if isinstance(template_id, int) else 'Template {}'.format(template_id), template_scene)
-#            print template_scene
         self.map_dict = temp_map_dict
         return scenes, out_ports
 
@@ -1697,13 +1703,10 @@ class Win(QtGui.QMainWindow):
     def routing_start(self):
         self.map_group.setVisible(False)
         self.template_manual_update_with_groups(True)
-        if not self.template_list[0].enabled:
-            #TODO: NO! devi proseguire!
-            return
-#        set_led(0, *[(i, 0) for i in range(48)])
-        [md.engine.output_event(md.event.CtrlEvent(md.engine.out_ports()[-1], t, 0, 0)) for t in range(1, 17)]
+        enabled = [t.id for t in self.template_list if t.enabled]
+        [md.engine.output_event(md.event.CtrlEvent(md.engine.out_ports()[-1], t+1, 0, 0)) for t in enabled]
         led_list = []
-        for id, signal in enumerate(self.template_list[0].widget_list):
+        for id, signal in enumerate(self.template_list[enabled[0]].widget_list):
             widget = self.widget_order[id]
             if not signal:
                 widget.setVisible(False)
@@ -1713,7 +1716,7 @@ class Win(QtGui.QMainWindow):
                 led_list.append((signal.led, signal.led_basevalue))
             if signal.text:
                 widget.siblingLabel.setText(signal.text)
-        set_led(0, *led_list)
+        set_led(enabled[0], *led_list)
         self.clear_template_leds()
 
     def midi_action(self, event):

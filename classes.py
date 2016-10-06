@@ -115,6 +115,12 @@ class SignalClass(object):
         else:
             self.led_state = self.led_basevalue = basevalue
             self.led_triggervalue = 0x33 if self.led >= 40 else 3
+            if self.led < 40:
+                self.led_scale = led_fullscale
+            elif self.led < 44:
+                self.led_scale = led_devscale
+            else:
+                self.led_scale = led_dirscale
         self.widget.ledSet = self.ledSet = self.led_basevalue
         self.siblingLed = self.led
 
