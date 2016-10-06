@@ -2559,11 +2559,12 @@ class Win(QtGui.QMainWindow):
             if len(groups):
                 group_list = []
                 for groupbox in groups:
-                    if groupbox.colors:
-                        group = (groupbox.extents, str(groupbox.title()), groupbox.colors)
-                    else:
-                        group = (groupbox.extents, str(groupbox.title()))
-                    group_list.append(group)
+                    if isinstance(groupbox, QtGui.QGroupBox):
+                        if groupbox.colors:
+                            groupbox = (groupbox.extents, str(groupbox.title()), groupbox.colors)
+                        else:
+                            groupbox = (groupbox.extents, str(groupbox.title()))
+                    group_list.append(groupbox)
                 conf_dict[template]['groups'] = group_list
 
             for widget in self.widget_order:
