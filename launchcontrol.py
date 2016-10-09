@@ -1830,7 +1830,7 @@ class Win(QtGui.QMainWindow):
 #        config_output = self.map_dict.get('output')
         if config_output and len(config_output):
             for output in config_output:
-                print output
+                #print output
                 if isinstance(output, str):
                     output_item = QtGui.QStandardItem(output)
                     output_item.port = None
@@ -2064,9 +2064,9 @@ class Win(QtGui.QMainWindow):
                     if self.editor_win.current_widget:
                         self.editor_win.dest_combo.setCurrentIndex(dest)
         self.rubber = None
-        for child in self.centralWidget().children():
-            if child in self.template_groups[self.template]:
-                print child.title()
+        #for child in self.centralWidget().children():
+            #if child in self.template_groups[self.template]:
+                #print child.title()
 
     def create_group(self, rect, interactive=False, name='Group', rgba=None, show=True):
         groupbox = QtGui.QGroupBox(name, self.centralWidget())

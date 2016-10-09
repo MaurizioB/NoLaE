@@ -1,8 +1,9 @@
+import re
+from math import pow, log, log10
 from PyQt4 import QtCore, QtGui
 from const import str_allowed, dev_scale, dir_scale, md_replace, md_replace_pattern
 import mididings as md
 from mididings.extra.osc import SendOSC
-import re
 
 def MsgHandler(level, msg):
     print msg
