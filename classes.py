@@ -37,9 +37,30 @@ class MyCycle(int, object):
         return self.current
     def reset(self):
         self.cycle = cycle(self.values)
+        self._index_cycle = cycle(range(1, len(values))+[0])
         self.current = self.cycle.next()
-        self._index = self._index_cycle.next()
+        self._index = 0
         return self.current
+    def index_prepare(self, index):
+        if index == 0:
+            prev = len(self.values)-1
+        else:
+            prev = index-1
+        while self._index != prev:
+            self.current = self.cycle.next()
+            self._index = self._index_cycle.next()
+    def reset_prepare(self):
+        self.index_prepare(0)
+    def value_prepare(self, value):
+        if not value in self.values:
+            raise ValueError
+        self.index_prepare(self.values.index(value))
+    def prev_prepare(self):
+        if len(self.values) == 2: return
+        prev = self.index - 1
+        if prev < 0:
+            prev = len(self.values) -1
+        self.index_prepare(prev)
 
 
 class SignalClass(object):
@@ -276,9 +297,10 @@ class Router(QtCore.QObject):
 
     def event_call(self, event):
         if event.type == md.SYSEX:
-            template = event.sysex[-2]
-            md.engine.switch_scene(template+1)
-            self.template_change.emit(template)
+            if event.sysex[:6] == sysex_init_lc:
+                template = event.sysex[-2]
+                md.engine.switch_scene(template+1)
+                self.template_change.emit(template)
             return
         elif event.type in [md.CTRL, md.NOTEON, md.NOTEOFF]:
             self.midi_signal.emit(copy(event))

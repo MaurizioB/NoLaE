@@ -1,8 +1,11 @@
 import re
 from math import pow, log, log10
 from PyQt4 import QtCore, QtGui
-from const import str_allowed, dev_scale, dir_scale, md_replace, md_replace_pattern
+#from const import str_allowed, dev_scale, dir_scale, md_replace, md_replace_pattern
+from const import *
 import mididings as md
+from _mididings import Engine as mdEngineClass
+from mididings import engine as mdEngine
 from mididings.extra.osc import SendOSC
 
 def MsgHandler(level, msg):
@@ -69,12 +72,20 @@ def rgb_from_hex(value, mode=None):
         return '#{:02x}0000'.format(red)
 
 def patch_validate(patch):
+    def Macro(*args):
+        try:
+            [(int(w), v if isinstance(v, ReprConst) else int(v)) for w, v, m in args]
+            return md.Pass()
+        except:
+            raise TypeError
     def Template(t):
-        return
+        if not isinstance(t, int) or not 1<=t<=16:
+            raise ValueError
+        return md.Pass()
     def TemplateNext():
-        return
+        return md.Pass()
     def TemplatePrev():
-        return
+        return md.Pass()
     try:
         patch = md_replace_pattern.sub(lambda m: md_replace[re.escape(m.group(0))], patch)
         eval(patch)
@@ -82,22 +93,8 @@ def patch_validate(patch):
     except:
         return False
 
-def patch_parse(patch, event, template, out_ports):
-    def Template(t):
-        t = t-1
-        if t < 0: t = 0
-        if t > 15: t = 15
-        return md.SysEx(out_ports+1, [0xF0, 0x00, 0x20, 0x29, 0x02, 0x11, 0x77, t, 0xF7])
-    def TemplateNext():
-        return Template(template+2 if template<15 else 0)
-    def TemplatePrev():
-        return Template(template if template>1 else 15)
-    try:
-        patch = md_replace_pattern.sub(lambda m: md_replace[re.escape(m.group(0))], patch)
-        return eval(patch)
-    except Exception as err:
-        print err
-        print 'Patchh:\t'.format(patch)
-        return md.Pass()
-
-
+def localEvent(event=None, midi_event=None):
+    #event is ignored
+    res = mdEngineClass.process_event(mdEngine._TheEngine(), midi_event)
+    for cmd in res:
+        mdEngineClass.output_event(mdEngine._TheEngine(), cmd)

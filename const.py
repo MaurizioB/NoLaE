@@ -18,6 +18,23 @@ class ReprConst(object):
 class Const(object):
     pass
 
+def value_assign_wrapper(id):
+    def func(value, mode=None):
+        return id, value, mode
+    return func
+
+for r, r_name in enumerate(['SendA', 'SendB', 'Pan', 'Fader', 'Focus', 'Control']):
+    for c in range(8):
+        globals()['{}_{}'.format(r_name, c+1)] = value_assign_wrapper(r*8+c)
+Device, Mute, Solo, Record, SendUp, SendDown, TrackLeft, TrackRight = [value_assign_wrapper(id) for id in range(48, 56)]
+Index, Reset, Prev, Next = (ReprConst() for i in range(4))
+Press = 1
+Release = 2
+PressRelease = 3
+
+sysex_init_lc = bytearray([240, 0, 32, 41, 2, 17])
+sysex_init_in = bytearray([240, 0, 0, 0, 0, 0])
+
 dev_scale = [0x00, 0x10, 0x11, 0x22, 0x23, 0x20, 0x33]
 dir_scale = [0x00, 0x01, 0x21, 0x22, 0x32, 0x33]
 

@@ -55,6 +55,7 @@ class Win(QtGui.QMainWindow):
     outputChanged = QtCore.pyqtSignal()
     templateRenamed = QtCore.pyqtSignal(int, object)
     dataChanged = QtCore.pyqtSignal()
+    internal_signal = QtCore.pyqtSignal(object)
 
     def __init__(self, mode='live', map_file=None, config=None, backend='alsa'):
         QtGui.QMainWindow.__init__(self, parent=None)
@@ -99,6 +100,7 @@ class Win(QtGui.QMainWindow):
                 self.router.midi_signal.connect(self.midi_action)
                 self.operation_start = self.routing_start
                 self.router.template_change.connect(self.template_remote_set_with_groups)
+                self.internal_signal.connect(self.internal_action)
             self.router_thread.start()
             while not md.engine.active():
                 pass
@@ -861,6 +863,9 @@ class Win(QtGui.QMainWindow):
                     else:
                         leds.append((widget.siblingLed, 0))
             else:
+                if not len(self.map_dict[template_iter]):
+                    clear(template_iter+1)
+                    return
                 leds = [(i, 0) for i in range(48)]
                 for widget in self.map_dict[template_iter].values():
                     leds[widget.siblingLed] = (widget.siblingLed, widget.ledSet)
@@ -1351,7 +1356,9 @@ class Win(QtGui.QMainWindow):
         except Exception as e:
             print e
         temp_map_dict = {}
+        self.reverse_map = {}
         for template in range(16):
+            self.reverse_map[template] = {}
             current_config = {}
             config_dict = config.get(template, [])
             if not len(config_dict):
@@ -1468,7 +1475,7 @@ class Win(QtGui.QMainWindow):
                         else:
                             patch = pre_patch
                 else:
-                    patch = patch_parse(patch, event, template, len(out_ports))
+                    patch = self.patch_parse(patch, event, template, len(out_ports))
                     if pre_patch:
                         patch = pre_patch >> patch
                     if chan is not None and not event_chan == chan:
@@ -1490,6 +1497,7 @@ class Win(QtGui.QMainWindow):
                 else:
                     range_mode = None
                 current_config[event] = SignalClass(template, widget, ext, mode, dest, patch, range_mode, text, text_values, led, led_basevalue, led_action)
+                self.reverse_map[template][widget] = (event, ext, toggle_range if toggle else None)
             temp_map_dict[template] = current_config
 
         scenes = {}
@@ -1700,6 +1708,29 @@ class Win(QtGui.QMainWindow):
             self.template_lbl.setEnabled(True)
         self.template_lbl.setText(template_text)
 
+    def patch_parse(self, patch, event, template, out_ports):
+        def Macro(*args):
+            print 'creating macro with values: {}'.format(args)
+#            return md.Call(localEvent, midi_event=md.event.SysExEvent(1, [240, 0, 0, 0, 0, 0]+[x for t in args for x in t]+[0xf7]))
+            return md.Call(lambda event: self.internal_signal.emit(args))
+        def Template(t):
+            t = t-1
+            if t < 0: t = 0
+            if t > 15: t = 15
+            return md.SysEx(out_ports+1, [0xF0, 0x00, 0x20, 0x29, 0x02, 0x11, 0x77, t, 0xF7])
+        def TemplateNext():
+            return Template(template+2 if template<15 else 0)
+        def TemplatePrev():
+            return Template(template if template>1 else 15)
+        try:
+            patch = md_replace_pattern.sub(lambda m: md_replace[re.escape(m.group(0))], patch)
+            return eval(patch)
+        except Exception as err:
+            print err
+            print 'Patchh:\t'.format(patch)
+            return md.Pass()
+
+
     def routing_start(self):
         self.map_group.setVisible(False)
         self.template_manual_update_with_groups(True)
@@ -1741,6 +1772,61 @@ class Win(QtGui.QMainWindow):
             elif event.data2 == ext[0]:
                 widget.setDown(False)
         self.map_dict[self.template][(event.channel, event_type, event.data1)].value = event.data2
+
+    def internal_action(self, cmd_list):
+        for id, value, arg in cmd_list:
+            widget = self.widget_order[id]
+            try:
+                event, ext, toggle = self.reverse_map[self.template][widget]
+            except:
+                continue
+            event_chan, event_type, event_id = event
+            if not isinstance(widget, QtGui.QPushButton):
+                localEvent(midi_event=md.event.MidiEvent(event_type, 1, event_chan, event_id, value))
+                continue
+            if isinstance(toggle, MyCycle):
+                if value == Next:
+                    pass
+                elif value == Prev:
+                    toggle.prev_prepare()
+                elif value == Reset:
+                    if toggle.index == 0: continue
+                    toggle.reset_prepare()
+                elif value == Index:
+                    if toggle.index == 0: continue
+                    toggle.index_prepare(arg)
+                elif value == Value:
+                    if toggle.current == arg: continue
+                    toggle.value_prepare(arg)
+                elif arg is None:
+                    try:
+                        toggle.value_prepare(value)
+                        if toggle.current == value: continue
+                    except:
+                        if toggle.index == value: continue
+                        toggle.index_prepare(value)
+                if event_type == md.NOTE:
+                    localEvent(midi_event=md.event.MidiEvent(md.NOTEON, 1, event_chan, event_id, ext[1]))
+                    localEvent(midi_event=md.event.MidiEvent(md.NOTEOFF, 1, event_chan, event_id, ext[0]))
+                else:
+                    localEvent(midi_event=md.event.MidiEvent(event_type, 1, event_chan, event_id, ext[1]))
+                    localEvent(midi_event=md.event.MidiEvent(event_type, 1, event_chan, event_id, ext[0]))
+                continue
+            if value == Press:
+                if event_type == md.NOTE:
+                    event_type = md.NOTEON
+                localEvent(midi_event=md.event.MidiEvent(event_type, 1, event_chan, event_id, ext[1]))
+            elif value == Release:
+                if event_type == md.NOTE:
+                    event_type = md.NOTEOFF
+                localEvent(midi_event=md.event.MidiEvent(event_type, 1, event_chan, event_id, ext[0]))
+            elif value == PressRelease:
+                if event_type == md.NOTE:
+                    localEvent(midi_event=md.event.MidiEvent(md.NOTEON, 1, event_chan, event_id, ext[1]))
+                    localEvent(midi_event=md.event.MidiEvent(md.NOTEOFF, 1, event_chan, event_id, ext[0]))
+                else:
+                    localEvent(midi_event=md.event.MidiEvent(event_type, 1, event_chan, event_id, ext[1]))
+                    localEvent(midi_event=md.event.MidiEvent(event_type, 1, event_chan, event_id, ext[0]))
 
 
     def editor_start(self):
@@ -2644,7 +2730,7 @@ class Win(QtGui.QMainWindow):
     def closeEvent(self, event):
         if self.unsaved:
             filetype = 'mapping' if self.mode==MapMode else 'configuration'
-            res = QtGui.QMessageBox.question(self, '{} not saved', 'Current {} has been modified, close anyway?'.format(filetype.title(), filetype), 
+            res = QtGui.QMessageBox.question(self, '{} not saved'.format(filetype.title()), 'Current {} has been modified, close anyway?'.format(filetype), 
                 buttons=QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel | QtGui.QMessageBox.Save)
             if res == QtGui.QMessageBox.Cancel:
                 event.ignore()
