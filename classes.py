@@ -1,5 +1,5 @@
 import mididings as md
-from PyQt4 import QtCore, QtGui
+from PyQt4 import QtCore, QtGui, uic
 from const import *
 from utils import *
 from copy import copy
@@ -64,7 +64,7 @@ class MyCycle(int, object):
 
 
 class SignalClass(object):
-    def __init__(self, template, widget, ext=True, mode=Value, dest=Pass, patch=md.Pass(), range_mode=None, text=None, text_values=None, led=True, led_basevalue=Enabled, led_action=Pass):
+    def __init__(self, template, widget, ext=True, mode=Value, dest=Pass, patch=md.Pass(), range_mode=None, text=None, text_values=None, led=True, led_basevalue=Enabled, led_action=Pass, led_scale=0):
         self.widget = widget
         self.inst = widget
         self.template = template
@@ -105,51 +105,54 @@ class SignalClass(object):
             self.led = led
             widget.siblingLed = led
         
-#        self.led_basevalue = led_basevalue
         if self.led is not None:
-            self.led_setup(led_basevalue)
+            self.led_setup(led_basevalue, led_scale if isinstance(led_scale, int) else 0)
         else:
-            self.led_state = self.led_basevalue = 0
-        self.led_assign(led_action)
+            self.led_state = self.led_basevalue = 4
+            self.siblingLed = None
+        self.led_assign_action(led_action, led_scale)
 
     def __repr__(self):
         return 'Signal({w}, {p}, {l})'.format(w=self.widget.readable, p=self.patch, l=self.led)
 
-    def led_setup(self, basevalue):
-        if basevalue == Enabled:
+    def led_setup(self, led_basevalue, led_scale=0):
+        if led_basevalue == Enabled:
             if self.led < 40:
-                basevalue = 0x30
-                triggervalue = 3
-                self.led_scale = led_fullscale
+                led_basevalue = 0x34
+                triggervalue = 7
+                self.led_scale = led_full_scale_list[led_scale]
             elif self.led < 44:
-                basevalue = 0x10
-                triggervalue = 0x33
-                self.led_scale = led_devscale
+                led_basevalue = 0x14
+                triggervalue = 0x37
+                self.led_scale = led_dev_scale_list[led_scale]
             else:
-                basevalue = 0x01
-                triggervalue = 0x33
-                self.led_scale = led_dirscale
-            self.led_state = self.led_basevalue = basevalue
+                led_basevalue = 0x05
+                triggervalue = 0x37
+                self.led_scale = led_dir_scale_list[led_scale]
+            self.led_state = self.led_basevalue = led_basevalue
             self.led_triggervalue = triggervalue
-        elif basevalue == Disabled:
+        elif led_basevalue == Disabled:
             self.led_state = self.led_basevalue = 0
         else:
-            self.led_state = self.led_basevalue = basevalue
-            self.led_triggervalue = 0x33 if self.led >= 40 else 3
+            self.led_state = self.led_basevalue = led_basevalue + 4
+            self.led_triggervalue = 0x37 if self.led >= 40 else 7
             if self.led < 40:
-                self.led_scale = led_fullscale
+                self.led_scale = led_full_scale_list[led_scale]
             elif self.led < 44:
-                self.led_scale = led_devscale
+                self.led_scale = led_dev_scale_list[led_scale]
             else:
-                self.led_scale = led_dirscale
+                self.led_scale = led_dir_scale_list[led_scale]
         self.widget.ledSet = self.ledSet = self.led_basevalue
         self.siblingLed = self.led
 
     def led_pass_action(self, value):
-        set_led(self.template, (self.led, led_fullscale[value]))
+        set_led(self.template, (self.led, self.led_scale[value]))
 
     def led_push_action(self, value):
-        set_led(self.template, (self.led, self.led_triggervalue if value==self.ext[1] else self.led_basevalue))
+        if value == self.ext[1]:
+            set_led(self.template, (self.led, self.led_triggervalue))
+        else:
+            set_led(self.template, (self.led, self.led_basevalue))
 
     def led_toggle_action(self, value):
         if value != self.ext[1]:
@@ -159,7 +162,7 @@ class SignalClass(object):
     def led_ignore_action(self, event):
         pass
 
-    def led_assign(self, action):
+    def led_assign_action(self, action, led_scale=None):
         if self.led is None:
             self.led_action = self.led_ignore_action
             return
@@ -170,9 +173,12 @@ class SignalClass(object):
                 self.led_action = self.led_pass_action
         elif isinstance(action, MyCycle):
             self.cycle = action
-            v_len = len(action.values)
-            div = 128 / (v_len - 1)
-            self.led_cycle = [self.led_basevalue] + [self.led_scale[div*(m+1)] for m in range(v_len-2)] + [self.led_scale[-1]]
+            if led_scale is None or isinstance(led_scale, int):
+                v_len = len(action.values)
+                div = 128 / (v_len - 1)
+                self.led_cycle = [self.led_basevalue] + [self.led_scale[div*(m+1)] for m in range(v_len-2)] + [self.led_scale[-1]]
+            else:
+                self.led_cycle = led_scale
             self.led_action = self.led_toggle_action
         elif isinstance(action, int):
             self.led_triggervalue = action
@@ -574,6 +580,277 @@ class SysExDialog(QtGui.QInputDialog):
             return False
 
 
+class ToggleScale(QtGui.QDialog):
+    def __init__(self, parent, scale_model):
+        QtGui.QDialog.__init__(self, parent)
+        uic.loadUi('toggle_scale_reset.ui', self)
+        self.scale_combo.setModel(scale_model)
+        self.setFixedSize(self.width(), self.height())
+
+    def exec_(self):
+        res = QtGui.QDialog.exec_(self)
+        if not res:
+            return
+        else:
+            return self.scale_combo.currentIndex(), self.mode_combo.currentIndex()
+
+class ToggleColors(QtGui.QDialog):
+    def __init__(self, parent, led_type=FullColors):
+        QtGui.QDialog.__init__(self, parent)
+        uic.loadUi('toggle_color_dialog.ui', self)
+        self.main = parent
+        self.led_type = led_type
+        self.led_scale = None
+        if led_type == FullColors:
+            self.color_pixmap = self.main.colormap_full_pixmap
+            self.scale_model = self.main.action_scale_model
+        elif led_type == DevColors:
+            self.color_pixmap = self.main.colormap_dev_pixmap
+            self.scale_model = self.main.action_dev_scale_model
+        else:
+            self.color_pixmap = self.main.colormap_dir_pixmap
+            self.scale_model = self.main.action_dir_scale_model
+        self.flash_chk.toggled.connect(self.flash_set)
+        self.toggle_model = QtGui.QStandardItemModel()
+        orig_model = self.main.toggle_listview.model()
+        for i in range(orig_model.rowCount()):
+            self.toggle_model.appendRow(orig_model.item(i).clone())
+        self.toggle_listview.setModel(self.toggle_model)
+        self.led_base_combo.setModel(self.main.led_base_combo.model())
+        self.base_color_table = self.create_table()
+        self.base_color_table.selectionChanged = lambda sel, prev, combo=self.led_base_combo: self.color_column_check(combo, sel, prev)
+        self.led_base_combo.setView(self.base_color_table)
+        self.led_flash_combo.setModel(self.main.led_flash_combo.model())
+        self.flash_color_table = self.create_table()
+        self.flash_color_table.selectionChanged = lambda sel, prev, combo=self.led_flash_combo: self.color_column_check(combo, sel, prev)
+        self.led_flash_combo.setView(self.flash_color_table)
+        for c in range(self.led_base_combo.model().columnCount()):
+            self.base_color_table.resizeColumnToContents(c)
+            self.flash_color_table.resizeColumnToContents(c)
+        min_width = sum([self.base_color_table.columnWidth(c) for c in range(self.led_base_combo.model().columnCount())])
+        self.base_color_table.setMinimumWidth(min_width)
+        self.flash_color_table.setMinimumWidth(min_width)
+        self.check_colors()
+
+        self.reset_btn.clicked.connect(self.reset_dialog)
+        self.led_base_combo.activated.connect(self.led_base_select)
+        self.led_flash_combo.activated.connect(self.led_flash_select)
+
+        self.toggle_timer = QtCore.QTimer()
+        self.toggle_timer.setInterval(500)
+        self.toggle_timer.timeout.connect(self.toggle_flash)
+        self.toggle_start()
+
+        self.toggle_listview.currentChanged = self.update
+        self.toggle_listview.setFocus()
+        self.setFixedHeight(self.height())
+
+
+    def toggle_start(self):
+        self.toggle_timer_status = cycle([LedPixmapRole, LedFlashPixmapRole])
+        self.toggle_flash()
+        self.toggle_timer.start()
+
+    def current_item(self):
+        return self.toggle_model.itemFromIndex(self.toggle_listview.currentIndex())
+
+    def get_led_pixmap(self, color):
+        if color&4:
+            color = color ^ 4
+        if self.led_type == FullColors:
+            red = color & 3
+            green = color >> 4
+            pixmap = self.color_pixmap[(red, green)]
+        else:
+            try:
+                pixmap = self.color_pixmap.index(color)
+            except:
+                if self.led_type == DevColors:
+                    pixmap = self.color_pixmap[dev_scale.index(dev_fallback[color])]
+                else:
+                    pixmap = self.color_pixmap[dir_scale.index(dir_fallback[color])]
+        return pixmap
+
+    def led_base_select(self, index):
+        color = self.led_base_combo.model().item(index, self.led_base_combo.modelColumn()).data(LedRole).toPyObject()
+        if color is None: return
+        pixmap = self.get_led_pixmap(color)
+        self.current_item().setData(color, LedRole)
+        self.current_item().setData(pixmap, LedPixmapRole)
+        self.led_change()
+        self.toggle_start()
+
+    def led_flash_select(self, index):
+        color = self.led_flash_combo.model().item(index, self.led_flash_combo.modelColumn()).data(LedRole).toPyObject()
+        if color is None: return
+        pixmap = self.get_led_pixmap(color)
+        self.current_item().setData(color, LedFlashRole)
+        self.current_item().setData(pixmap, LedFlashPixmapRole)
+        self.led_change()
+        self.toggle_start()
+
+    def flash_set(self, state):
+        self.led_flash_combo.setEnabled(state)
+        if not state:
+            id = self.toggle_listview.currentIndex().row()
+            item = self.toggle_model.item(id)
+            item.setData(None, LedFlashPixmapRole)
+            self.led_scale[id] = item.data(LedRole).toPyObject()
+#            self.current_item().setData(None, LedFlashPixmapRole)
+        else:
+            self.led_flash_select(self.led_flash_combo.currentIndex())
+
+    def led_change(self):
+        if isinstance(self.led_scale, list):
+            item = self.current_item()
+            id = self.toggle_listview.currentIndex().row()
+            color = item.data(LedRole).toPyObject()
+            flash = item.data(LedFlashRole).toPyObject()
+            if flash is not None:
+                self.led_scale[id] = color + ((flash + 1) << 6)
+            else:
+                self.led_scale[id] = color
+        else:
+            self.led_scale = []
+            for i in range(self.toggle_model.rowCount()):
+                item = self.toggle_model.item(i)
+                color = item.data(LedRole).toPyObject()
+                flash = item.data(LedFlashRole).toPyObject()
+                if flash is not None:
+                    self.led_scale.append(color + ((flash + 1) << 6))
+                else:
+                    self.led_scale.append(color)
+
+    def update(self, index, prev=None):
+        item = self.toggle_model.itemFromIndex(index)
+        color = item.data(LedRole).toPyObject()
+        if color is None:
+            color = 0
+        if color&4:
+            color = color ^ 4
+        if self.led_type == FullColors:
+            red = color & 3
+            green = color >> 4
+            self.led_base_combo.setModelColumn(green)
+            self.led_base_combo.setCurrentIndex(red)
+        else:
+            self.led_base_combo.setModelColumn(0)
+            if self.led_type == DevColors:
+                try:
+                    id = dev_scale.index(color)
+                except:
+                    id = dev_scale.index(dev_fallback[color])
+            else:
+                try:
+                    id = dir_scale.index(color)
+                except:
+                    id = dir_scale.index(dir_fallback[color])
+            self.led_base_combo.setCurrentIndex(id)
+        flash = item.data(LedFlashRole).toPyObject()
+        if flash is None:
+            self.flash_chk.setChecked(False)
+            return
+        self.flash_chk.setChecked(True)
+        if self.led_type == FullColors:
+            red = flash & 3
+            green = flash >> 4
+            self.led_flash_combo.setModelColumn(green)
+            self.led_flash_combo.setCurrentIndex(red)
+        else:
+            self.led_base_combo.setModelColumn(0)
+            if self.led_type == DevColors:
+                try:
+                    id = dev_scale.index(color)
+                except:
+                    id = dev_scale.index(dev_fallback[color])
+            else:
+                try:
+                    id = dir_scale.index(color)
+                except:
+                    id = dir_scale.index(dir_fallback[color])
+            self.led_flash_combo.setCurrentIndex(id)
+
+    def check_colors(self):
+        scale = self.scale_model.item(0).data(ScaleRole).toPyObject()
+#        try:
+#            scale[0] = self.main.current_widget['led_basevalue']
+#        except:
+#            self.main.widget_save()
+#            scale[0] = self.main.current_widget['led_basevalue']
+        scale[0] = self.main.get_led_basevalue()
+        for i in range(self.toggle_model.rowCount()):
+            item = self.toggle_model.item(i)
+            led_role = item.data(LedRole).toPyObject()
+            if led_role is None:
+                color = scale[i]
+                if color > 63:
+                    flash = (color >> 6) - 1
+                    color &= 63
+                    item.setData(flash, LedFlashRole)
+                    item.setData(self.get_led_pixmap(flash), LedFlashPixmapRole)
+                item.setData(color, LedRole)
+                item.setData(self.get_led_pixmap(color), LedPixmapRole)
+
+    def reset_dialog(self):
+        dialog = ToggleScale(self, self.scale_model)
+        res = dialog.exec_()
+        if not res: return
+        scale_id, mode = res
+        scale = self.scale_model.item(scale_id).data(ScaleRole).toPyObject()
+        if mode == 0:
+            for i in range(self.toggle_model.rowCount()):
+                item = self.toggle_model.item(i)
+                color = scale[int(item.text())]
+                item.setData(color, LedRole)
+                item.setData(self.get_led_pixmap(color), LedPixmapRole)
+                item.setData(None, LedFlashRole)
+                item.setData(None, LedFlashPixmapRole)
+            self.led_scale = scale_id
+        else:
+            v_len = self.toggle_model.rowCount()
+            div = len(scale)/(v_len-1)
+            toggle_scale = [scale[i*div] for i in range(v_len-1)]
+            toggle_scale.append(scale[-1])
+            for i in range(v_len):
+                item = self.toggle_model.item(i)
+                color = toggle_scale[i]
+                item.setData(color, LedRole)
+                item.setData(self.get_led_pixmap(color), LedPixmapRole)
+                item.setData(None, LedFlashRole)
+                item.setData(None, LedFlashPixmapRole)
+            self.led_scale = toggle_scale
+
+        self.update(self.toggle_model.index(0, 0))
+        self.toggle_start()
+
+    def create_table(self):
+        table = QtGui.QTableView(self)
+        table.setShowGrid(False)
+        table.verticalHeader().hide()
+        table.horizontalHeader().hide()
+        table.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+        table.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
+        return table
+
+    def color_column_check(self, combo, selected, previous):
+        index = combo.view().selectedIndexes()[0]
+        combo.setModelColumn(index.column())
+        combo.setCurrentIndex(index.row())
+
+    def toggle_flash(self):
+        model = self.toggle_listview.model()
+        if model is None or model.rowCount() <= 0: return
+        led_role = self.toggle_timer_status.next()
+        for i in range(model.rowCount()):
+            item = model.item(i)
+            pixmap = item.data(led_role).toPyObject()
+            if pixmap is not None:
+                item.setData(pixmap, QtCore.Qt.DecorationRole)
+
+    def exec_(self):
+        res = QtGui.QDialog.exec_(self)
+        if not res: return None
+        return self.toggle_model, self.led_scale
 
 
 

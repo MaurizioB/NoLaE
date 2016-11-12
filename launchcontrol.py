@@ -14,7 +14,7 @@ from const import *
 from utils import *
 from classes import *
 
-version = 0.8
+version = 0.9
 prog_name = 'NoLaE'
 description = 'A Novation LaunchControl mapper and filter'
 backend = 'alsa'
@@ -868,6 +868,7 @@ class Win(QtGui.QMainWindow):
                     return
                 leds = [(i, 0) for i in range(48)]
                 for widget in self.map_dict[template_iter].values():
+                    if widget.siblingLed is None: continue
                     leds[widget.siblingLed] = (widget.siblingLed, widget.ledSet)
             set_led(template_iter, *leds)
             QtCore.QTimer.singleShot(200, lambda: clear(template_iter+1))
@@ -1485,6 +1486,7 @@ class Win(QtGui.QMainWindow):
                 led = patch_data.get('led', True)
                 led_basevalue = patch_data.get('led_basevalue', Enabled)
                 led_action = patch_data.get('led_action', Pass)
+                led_scale = patch_data.get('led_scale', 0)
                 if led_action == Toggle:
                     if toggle:
                         led_action = toggle_range
@@ -1496,7 +1498,7 @@ class Win(QtGui.QMainWindow):
                     range_mode = toggle_range
                 else:
                     range_mode = None
-                current_config[event] = SignalClass(template, widget, ext, mode, dest, patch, range_mode, text, text_values, led, led_basevalue, led_action)
+                current_config[event] = SignalClass(template, widget, ext, mode, dest, patch, range_mode, text, text_values, led, led_basevalue, led_action, led_scale)
                 self.reverse_map[template][widget] = (event, ext, toggle_range if toggle else None)
             temp_map_dict[template] = current_config
 
@@ -1735,7 +1737,8 @@ class Win(QtGui.QMainWindow):
         self.map_group.setVisible(False)
         self.template_manual_update_with_groups(True)
         enabled = [t.id for t in self.template_list if t.enabled]
-        [md.engine.output_event(md.event.CtrlEvent(md.engine.out_ports()[-1], t+1, 0, 0)) for t in enabled]
+        [[md.engine.output_event(md.event.CtrlEvent(md.engine.out_ports()[-1], t+1, 0, 0)), 
+          md.engine.output_event(md.event.CtrlEvent(md.engine.out_ports()[-1], t+1, 0, 40))] for t in enabled]
         led_list = []
         for id, signal in enumerate(self.template_list[enabled[0]].widget_list):
             widget = self.widget_order[id]
@@ -1761,7 +1764,7 @@ class Win(QtGui.QMainWindow):
         widget_data.trigger(event.data2)
         widget = widget_data.widget
         ext = widget_data.ext
-        mode = widget_data.mode
+#        mode = widget_data.mode
         if not isinstance(widget, QtGui.QPushButton):
             widget.setValue(event.data2)
         else:
@@ -2394,18 +2397,26 @@ class Win(QtGui.QMainWindow):
         led_id = led_item.led
         if led_id is not None and led != False:
             led_basevalue = widget_dict.get('led_basevalue')
+            led_baseflash = None
             if led_basevalue is None or led_basevalue == Enabled:
                 led_basevalue = rgb_from_hex(led_item.ledSet)
             elif led_basevalue == Disabled:
                 led_basevalue = '#000'
             else:
+                if led_basevalue > 63:
+                    led_baseflash = (led_basevalue >> 6) - 1
+                    led_basevalue &= 63
                 if led_id < 40:
                     led_basevalue = rgb_from_hex(led_basevalue)
                 elif led_id < 44:
                     led_basevalue = rgb_from_hex(led_basevalue, mode='dev')
                 else:
                     led_basevalue = rgb_from_hex(led_basevalue, mode='dir')
-            led_extent = '<br>Colors: <span style="background-color: {}">&nbsp;&nbsp;&nbsp;</span> '.format(led_basevalue)
+            led_extent = '<br>Colors: <span style="background-color: {}">&nbsp;&nbsp;&nbsp;</span>'.format(led_basevalue)
+            if led_baseflash is not None:
+                led_extent += '<span style="background-color: {}">&nbsp;&nbsp;&nbsp;</span> '.format(rgb_from_hex(led_baseflash))
+            else:
+                led_extent += ' '
 
             led_action = widget_dict.get('led_action', Pass)
             if led_action == Pass:

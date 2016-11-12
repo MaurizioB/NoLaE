@@ -22,8 +22,16 @@ def str_check(text):
             new_text += l
     return new_text
 
-def set_led(template=0, *led_list):
+def set_led(template=0, *raw_led_list):
     sysex_string = [0xF0, 0x00, 0x20, 0x29, 0x02, 0x11, 0x78, template]
+    led_list = []
+    for id, value in raw_led_list:
+        if value > 63:
+            flash = (value >> 6) - 1
+            value &= 63
+            led_list.append((id, value|4, id, flash))
+        else:
+            led_list.append((id, value|4))
     sysex_string.extend([x for t in led_list for x in t])
     sysex_string.append(0xf7)
     newevent = md.event.SysExEvent(md.engine.out_ports()[-1], sysex_string)
@@ -71,6 +79,62 @@ def rgb_from_hex(value, mode=None):
         red = color*51
         return '#{:02x}0000'.format(red)
 
+def get_led_type(id):
+    if id < 0:
+        return None
+    if id < 40:
+        return FullColors
+    if id < 44:
+        return DevColors
+    return DirColors
+
+def get_pixmap(red=0, green=0):
+    pixmap = QtGui.QPixmap(8, 8)
+    color = QtGui.QColor()
+    color.setRgb(red, green, 0)
+    pixmap.fill(color)
+    return pixmap
+
+def get_dev_pixmap():
+    pass
+
+def scale_full_pixmap(scale):
+    pixmap = QtGui.QPixmap(64, 16)
+    col_width = 64/len(scale)
+    painter = QtGui.QPainter(pixmap)
+    for i, color in enumerate(scale):
+        red = color & 3
+        green = color >> 4
+        brush = QtGui.QBrush(QtGui.QColor(red*85, green*85, 0))
+        painter.fillRect(QtCore.QRectF(i*col_width, 0, col_width, 16), brush)
+    return pixmap
+
+def scale_dev_pixmap(scale):
+    pixmap = QtGui.QPixmap(64, 16)
+    col_width = 64./len(scale)
+    painter = QtGui.QPainter(pixmap)
+    for i, color in enumerate(scale):
+        if color in dev_scale_conv:
+            color = dev_scale_conv[color]
+        red = color & 3
+        green = color >> 4
+        mix = red+green
+        brush = QtGui.QBrush(QtGui.QColor(mix*42, mix*42, 0))
+        painter.fillRect(QtCore.QRectF(i*col_width, 0, col_width, 16), brush)
+    return pixmap
+
+def scale_dir_pixmap(scale):
+    pixmap = QtGui.QPixmap(64, 16)
+    col_width = 64./len(scale)
+    painter = QtGui.QPainter(pixmap)
+    for i, color in enumerate(scale):
+        red = color & 3
+        green = color >> 4
+        mix = red+green
+        brush = QtGui.QBrush(QtGui.QColor(mix*42, 0, 0))
+        painter.fillRect(QtCore.QRectF(i*col_width, 0, col_width, 16), brush)
+    return pixmap
+
 def patch_validate(patch):
     def Macro(*args):
         try:
@@ -98,3 +162,23 @@ def localEvent(event=None, midi_event=None):
     res = mdEngineClass.process_event(mdEngine._TheEngine(), midi_event)
     for cmd in res:
         mdEngineClass.output_event(mdEngine._TheEngine(), cmd)
+
+def findIndex(model, value, role=UserRole):
+    rows = model.rowCount()
+    for c in range(model.columnCount()):
+        for r in range(rows):
+            item = model.item(c, r)
+            if item.data(role).toPyObject() == value:
+                return model.indexFromItem(item)
+    return None
+
+
+
+
+
+
+
+
+
+
+

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>551</width>
-    <height>557</height>
+    <width>683</width>
+    <height>548</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -178,7 +178,30 @@
            </property>
            <property name="sizeHint" stdset="0">
             <size>
-             <width>20</width>
+             <width>10</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="Line" name="line_2">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="led_hspacer1_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::MinimumExpanding</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>10</width>
              <height>20</height>
             </size>
            </property>
@@ -192,10 +215,37 @@
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="led_base_combo"/>
+          <widget class="QComboBox" name="led_base_combo">
+           <property name="maximumSize">
+            <size>
+             <width>50</width>
+             <height>16777215</height>
+            </size>
+           </property>
+          </widget>
          </item>
          <item>
-          <spacer name="led_hspacer2">
+          <widget class="QCheckBox" name="led_base_flash_chk">
+           <property name="text">
+            <string>Flash</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="led_flash_combo">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>50</width>
+             <height>16777215</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="led_hspacer1_3">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
@@ -204,7 +254,30 @@
            </property>
            <property name="sizeHint" stdset="0">
             <size>
-             <width>20</width>
+             <width>10</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="Line" name="line">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="led_hspacer1_4">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::MinimumExpanding</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>10</width>
              <height>20</height>
             </size>
            </property>
@@ -221,6 +294,35 @@
           <widget class="QComboBox" name="led_action_combo">
            <property name="editable">
             <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="led_action_adv_chk">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Flash</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="led_action_adv_combo">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>80</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>32</width>
+             <height>16</height>
+            </size>
            </property>
           </widget>
          </item>
@@ -565,6 +667,16 @@
           </widget>
          </item>
          <item>
+          <widget class="QPushButton" name="toggle_colors_edit_btn">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Edit colors</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <spacer name="bottom_hspacer1">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
@@ -905,7 +1017,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>551</width>
+     <width>683</width>
      <height>17</height>
     </rect>
    </property>
