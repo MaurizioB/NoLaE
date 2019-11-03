@@ -6,7 +6,7 @@ class ReprConst(object):
         self.name = None
         self.id = id
     def get_name(self):
-        return [k for k, v in globals().items() if v is self][0]
+        return [k for k, v in list(globals().items()) if v is self][0]
 #    def __int__(self):
 #        return self.id
     def __str__(self):
@@ -48,7 +48,7 @@ sysex_init_lc = bytearray([240, 0, 32, 41, 2, 17])
 def get_fullscale(base, copy = True):
     copy = 4 if copy else 0
     scale = []
-    div = 128/(len(base))
+    div = 128//(len(base))
     for value in base:
         scale.extend([value+copy for x in range(div)])
     while len(scale) < 128:
@@ -153,8 +153,8 @@ md_replace.update({k:'md.event.{}'.format(k) for k in md_event.replace(',', '').
 md_replace.update({k:'md.extra.{}'.format(k) for k in md_extra.replace(',', '').split()})
 md_replace.update({k:'md.engine.{}'.format(k) for k in md_engine.replace(',', '').split()})
 #md_replace['SendOSC'] = 'md.extra.osc.SendOSC'
-md_replace = dict((re.escape(k), v) for k,  v in md_replace.items())
-md_replace_pattern = re.compile('|'.join(r'\b{}\b'.format(k) for k in md_replace.keys()))
+md_replace = dict((re.escape(k), v) for k,  v in list(md_replace.items()))
+md_replace_pattern = re.compile('|'.join(r'\b{}\b'.format(k) for k in list(md_replace.keys())))
 
 patch_colors = (('darkred', 'red'), ('gray', 'black'))
 

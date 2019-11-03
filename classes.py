@@ -11,8 +11,8 @@ class MyCycle(int, object):
     def __init__(self, values):
         self.values = values
         self.cycle = cycle(values)
-        self._index_cycle = cycle(range(1, len(values))+[0])
-        self.current = self.cycle.next()
+        self._index_cycle = cycle(list(range(1, len(values)))+[0])
+        self.current = next(self.cycle)
         self._index = 0
     @property
     def index(self):
@@ -31,14 +31,14 @@ class MyCycle(int, object):
         return self.current
     def __radd__(self, other):
         return other+self.current
-    def next(self):
-        self.current = self.cycle.next()
-        self._index = self._index_cycle.next()
+    def __next__(self):
+        self.current = next(self.cycle)
+        self._index = next(self._index_cycle)
         return self.current
     def reset(self):
         self.cycle = cycle(self.values)
-        self._index_cycle = cycle(range(1, len(values))+[0])
-        self.current = self.cycle.next()
+        self._index_cycle = cycle(list(range(1, len(values)))+[0])
+        self.current = next(self.cycle)
         self._index = 0
         return self.current
     def index_prepare(self, index):
@@ -47,8 +47,8 @@ class MyCycle(int, object):
         else:
             prev = index-1
         while self._index != prev:
-            self.current = self.cycle.next()
-            self._index = self._index_cycle.next()
+            self.current = next(self.cycle)
+            self._index = next(self._index_cycle)
     def reset_prepare(self):
         self.index_prepare(0)
     def value_prepare(self, value):
@@ -91,7 +91,7 @@ class SignalClass(object):
 #                elif isinstance(self.range_mode, MyCycle):
 #                    print 'staminchia: {}'.format(self.range_mode.values)
 #                else:
-                    self.text_values = range(128)
+                    self.text_values = list(range(128))
             self.text = self.basetext.format(self.text_values[0])
             self.trigger = self.interactive_trigger
         if led is True:
@@ -840,7 +840,7 @@ class ToggleColors(QtGui.QDialog):
     def toggle_flash(self):
         model = self.toggle_listview.model()
         if model is None or model.rowCount() <= 0: return
-        led_role = self.toggle_timer_status.next()
+        led_role = next(self.toggle_timer_status)
         for i in range(model.rowCount()):
             item = model.item(i)
             pixmap = item.data(led_role).toPyObject()

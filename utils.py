@@ -9,7 +9,7 @@ from mididings import engine as mdEngine
 from mididings.extra.osc import SendOSC
 
 def MsgHandler(level, msg):
-    print msg
+    print(msg)
 
 def str_check(text):
     if isinstance(text, QtCore.QString):

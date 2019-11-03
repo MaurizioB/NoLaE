@@ -1,11 +1,11 @@
 from PyQt4 import QtCore, QtGui, uic
-import icons
+from . import icons
 from collections import namedtuple
 from itertools import cycle
 
-from const import *
-from classes import *
-from utils import *
+from .const import *
+from .classes import *
+from .utils import *
 
 TPatch = namedtuple('TPatch', 'label patch input')
 TPatch.__new__.__defaults__ = (None, ) * len(TPatch._fields)
@@ -224,7 +224,7 @@ class EditorWin(QtGui.QMainWindow):
     def toggle_flash(self):
         model = self.toggle_listview.model()
         if model is None or model.rowCount() <= 0: return
-        led_role = self.toggle_timer_status.next()
+        led_role = next(self.toggle_timer_status)
         for i in range(model.rowCount()):
             item = model.item(i)
             pixmap = item.data(led_role).toPyObject()
@@ -670,7 +670,7 @@ class EditorWin(QtGui.QMainWindow):
             combo.setModelColumn(index[0].column())
             combo.setCurrentIndex(index[0].row())
         else:
-            print 'What\'s wrong with index? {}'.format(index)
+            print('What\'s wrong with index? {}'.format(index))
             combo.setModelColumn(0)
             combo.setCurrentIndex(0)
 
@@ -815,7 +815,7 @@ class EditorWin(QtGui.QMainWindow):
         self.labelChanged.emit(self.current_widget['widget'], self.text_edit.text())
 
     def led_action_update(self, index):
-        print 'changing!!!'
+        print('changing!!!')
         if index == 0:
             if self.led_action_combo.modelColumn() == 0:
                 self.led_action_adv_chk.setEnabled(True)
