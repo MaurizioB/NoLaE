@@ -1,5 +1,5 @@
 import string, re
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 
 class ReprConst(object):
     def __init__(self, id=None):
