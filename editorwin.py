@@ -1,32 +1,32 @@
-from PyQt4 import QtCore, QtGui, uic
-import icons
+from PyQt5 import QtCore, QtGui, uic
+from . import icons
 from collections import namedtuple
 from itertools import cycle
 
-from const import *
-from classes import *
-from utils import *
+from .const import *
+from .classes import *
+from .utils import *
 
 TPatch = namedtuple('TPatch', 'label patch input')
 TPatch.__new__.__defaults__ = (None, ) * len(TPatch._fields)
 TPatch.__new__.__defaults__ = (None, )
 
-class NoTextDelegate(QtGui.QStyledItemDelegate):
+class NoTextDelegate(QtWidgets.QStyledItemDelegate):
     def displayText(self, value, locale):
         return ''
 
-class OutputWidget(QtGui.QWidget):
+class OutputWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         uic.loadUi('output_widget.ui', self)
         self.main = self.parent()
 
-class EditorWin(QtGui.QMainWindow):
+class EditorWin(QtWidgets.QMainWindow):
     labelChanged = QtCore.pyqtSignal(object, object)
     widgetSaved = QtCore.pyqtSignal(int)
 
     def __init__(self, parent=None, mode='control'):
-        QtGui.QMainWindow.__init__(self, parent)
+        QtWidgets.QMainWindow.__init__(self, parent)
         self.main = self.parent()
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.conf_dict = self.main.conf_dict
@@ -96,7 +96,7 @@ class EditorWin(QtGui.QMainWindow):
         self.led_dialog.setModal(True)
         self.sysex_dialog = SysExDialog(self)
         self.sysex_dialog.setModal(True)
-        saveAction = QtGui.QAction(self)
+        saveAction = QAction(self)
         saveAction.setShortcut('Ctrl+s')
         saveAction.triggered.connect(self.main_save)
         self.addAction(saveAction)
@@ -224,7 +224,7 @@ class EditorWin(QtGui.QMainWindow):
     def toggle_flash(self):
         model = self.toggle_listview.model()
         if model is None or model.rowCount() <= 0: return
-        led_role = self.toggle_timer_status.next()
+        led_role = next(self.toggle_timer_status)
         for i in range(model.rowCount()):
             item = model.item(i)
             pixmap = item.data(led_role).toPyObject()
@@ -235,10 +235,10 @@ class EditorWin(QtGui.QMainWindow):
     def range_set(self, value):
         self.range_min_spin.setEnabled(value)
         self.range_max_spin.setEnabled(value)
-        self.range_combo.setEnabled(True if value and not isinstance(self.current_widget.get('widget'), QtGui.QPushButton) else False)
+        self.range_combo.setEnabled(True if value and not isinstance(self.current_widget.get('widget'), QtWidgets.QPushButton) else False)
         self.range_min_lbl.setEnabled(value)
         self.range_max_lbl.setEnabled(value)
-        self.range_scale_lbl.setEnabled(True if value and not isinstance(self.current_widget.get('widget'), QtGui.QPushButton) else False)
+        self.range_scale_lbl.setEnabled(True if value and not isinstance(self.current_widget.get('widget'), QtWidgets.QPushButton) else False)
         if value:
             self.toggle_chk.setChecked(False)
             if not self.current_widget.get('range'):
@@ -375,7 +375,7 @@ class EditorWin(QtGui.QMainWindow):
     def event(self, event):
         if event.type() == QtCore.QEvent.WindowDeactivate:
             self.widget_save()
-        return QtGui.QMainWindow.event(self, event)
+        return QtWidgets.QMainWindow.event(self, event)
 
     def main_save(self, *args):
         self.widget_save()
@@ -400,7 +400,7 @@ class EditorWin(QtGui.QMainWindow):
 #        print action_dict.items()
         for item in action_dict:
             if isinstance(item, TPatch):
-                action = QtGui.QAction(item.label, self)
+                action = QAction(item.label, self)
                 action.patch = item.patch
                 if item.input:
                     action.input = item.input
@@ -412,7 +412,7 @@ class EditorWin(QtGui.QMainWindow):
                 label, patch_list = item
                 submenu = self.patch_templates.addMenu(label)
                 for tpatch in patch_list:
-                    action = QtGui.QAction(tpatch.label, self)
+                    action = QAction(tpatch.label, self)
                     action.patch = tpatch.patch
                     if tpatch.input:
                         action.input = tpatch.input
@@ -427,7 +427,7 @@ class EditorWin(QtGui.QMainWindow):
         if action.input:
             for req in action.input:
                 if req[0] == int:
-                    value, res = QtGui.QInputDialog.getInt(self, action.text(), req[-1], min=0, max=req[1])
+                    value, res = QtWidgets.QInputDialog.getInt(self, action.text(), req[-1], min=0, max=req[1])
                     if not res:
                         return
                     patch = patch.format(value)
@@ -670,7 +670,7 @@ class EditorWin(QtGui.QMainWindow):
             combo.setModelColumn(index[0].column())
             combo.setCurrentIndex(index[0].row())
         else:
-            print 'What\'s wrong with index? {}'.format(index)
+            print('What\'s wrong with index? {}'.format(index))
             combo.setModelColumn(0)
             combo.setCurrentIndex(0)
 
@@ -702,7 +702,7 @@ class EditorWin(QtGui.QMainWindow):
             button.setEnabled(value)
 #        self.toggle_listview.setEnabled(value)
 #        if self.current_widget:
-#            if not isinstance(self.current_widget['widget'], QtGui.QPushButton):
+#            if not isinstance(self.current_widget['widget'], QtWidgets.QPushButton):
 #                for button in self.convert_group.buttons():
 #                    button.setEnabled(False)
 #                self.convert_chk.setEnabled(False)
@@ -752,7 +752,7 @@ class EditorWin(QtGui.QMainWindow):
             return
         self.led_base_combo.setEnabled(True)
         self.led_action_combo.setEnabled(True)
-        if isinstance(widget, QtGui.QPushButton):
+        if isinstance(widget, QtWidgets.QPushButton):
             is_scale = False
             self.action_flash_table.setIconSize(QtCore.QSize(16, 16))
         else:
@@ -815,7 +815,7 @@ class EditorWin(QtGui.QMainWindow):
         self.labelChanged.emit(self.current_widget['widget'], self.text_edit.text())
 
     def led_action_update(self, index):
-        print 'changing!!!'
+        print('changing!!!')
         if index == 0:
             if self.led_action_combo.modelColumn() == 0:
                 self.led_action_adv_chk.setEnabled(True)
@@ -865,23 +865,23 @@ class EditorWin(QtGui.QMainWindow):
                 self.labelChanged.emit(self.current_widget['widget'], patch if len(patch) else True)
 
     def statusbar_create(self):
-        self.statusbar.addWidget(QtGui.QLabel('Current mapping:'))
-        self.statusbar_empty = QtGui.QLabel('(None)')
+        self.statusbar.addWidget(QtWidgets.QLabel('Current mapping:'))
+        self.statusbar_empty = QtWidgets.QLabel('(None)')
         self.statusbar_empty.setEnabled(False)
         self.statusbar.addWidget(self.statusbar_empty)
-        etype_edit = QtGui.QLabel('', self.statusbar)
+        etype_edit = QtWidgets.QLabel('', self.statusbar)
         etype_edit.setFixedWidth(40)
-        event_edit = QtGui.QLabel('', self.statusbar)
+        event_edit = QtWidgets.QLabel('', self.statusbar)
         event_edit.setFixedWidth(50)
-        event_lbl = QtGui.QLabel('event', self.statusbar)
-        echan_lbl = QtGui.QLabel('Channel', self.statusbar)
-        echan_edit = QtGui.QLabel('', self.statusbar)
+        event_lbl = QtWidgets.QLabel('event', self.statusbar)
+        echan_lbl = QtWidgets.QLabel('Channel', self.statusbar)
+        echan_edit = QtWidgets.QLabel('', self.statusbar)
         echan_edit.setFixedWidth(12)
-        eext_lbl = QtGui.QLabel('Range', self.statusbar)
-        eext_edit = QtGui.QLabel('', self.statusbar)
+        eext_lbl = QtWidgets.QLabel('Range', self.statusbar)
+        eext_edit = QtWidgets.QLabel('', self.statusbar)
         eext_edit.setFixedWidth(48)
-        emode_lbl = QtGui.QLabel('Mode', self.statusbar)
-        emode_edit = QtGui.QLabel('', self.statusbar)
+        emode_lbl = QtWidgets.QLabel('Mode', self.statusbar)
+        emode_edit = QtWidgets.QLabel('', self.statusbar)
         emode_edit.setFixedWidth(42)
         self.statusbar_edits = [etype_edit, event_edit, echan_edit, eext_edit, emode_edit]
         self.statusbar_labels = [event_lbl, echan_lbl, eext_lbl, emode_lbl]
@@ -898,8 +898,8 @@ class EditorWin(QtGui.QMainWindow):
             widget.hide()
         for widget in self.statusbar_edits:
             widget.hide()
-            widget.setFrameStyle(QtGui.QLabel.Sunken)
-            widget.setFrameShape(QtGui.QLabel.Panel)
+            widget.setFrameStyle(QtWidgets.QLabel.Sunken)
+            widget.setFrameShape(QtWidgets.QLabel.Panel)
 
     def status_update(self, event_data):
         if not event_data:
@@ -1033,7 +1033,7 @@ class EditorWin(QtGui.QMainWindow):
             led_action = str(self.led_action_combo.currentText())
             if led_action in ['Pass', 'Ignore', 'Toggle']:
                 led_action = eval(led_action)
-                if led_action == Pass and not isinstance(widget, QtGui.QPushButton) and self.led_action_adv_chk.isChecked():
+                if led_action == Pass and not isinstance(widget, QtWidgets.QPushButton) and self.led_action_adv_chk.isChecked():
                     self.current_widget['led_scale'] = self.led_action_adv_combo.currentIndex()
                     #TODO: completa con toggle?
             else:
@@ -1101,7 +1101,7 @@ class EditorWin(QtGui.QMainWindow):
         else:
             setBold(self.ledlist_model.item(0))
         widget_dict = self.main.conf_dict[self.main.template][widget]
-        if not isinstance(widget, QtGui.QPushButton):
+        if not isinstance(widget, QtWidgets.QPushButton):
             self.led_action_adv_chk.setText('Scale')
             self.toggle_item.setEnabled(False)
         else:
@@ -1344,9 +1344,9 @@ class EditorWin(QtGui.QMainWindow):
         self.range_min_spin.setValue(range_start)
         self.range_max_spin.setValue(range_end)
         self.range_combo.setCurrentIndex(range_type)
-        self.range_combo.setEnabled(True if vrange and not isinstance(widget, QtGui.QPushButton) else False)
-        self.range_scale_lbl.setEnabled(True if vrange and not isinstance(widget, QtGui.QPushButton) else False)
-        if not isinstance(widget, QtGui.QPushButton):
+        self.range_combo.setEnabled(True if vrange and not isinstance(widget, QtWidgets.QPushButton) else False)
+        self.range_scale_lbl.setEnabled(True if vrange and not isinstance(widget, QtWidgets.QPushButton) else False)
+        if not isinstance(widget, QtWidgets.QPushButton):
             self.toggle_chk.setChecked(False)
             self.toggle_chk.setEnabled(False)
             toggle_model = QtGui.QStandardItemModel()

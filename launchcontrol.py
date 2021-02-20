@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import sys, argparse
@@ -7,7 +7,9 @@ from mididings import extra as mdx
 from collections import OrderedDict, namedtuple
 from copy import copy
 from os.path import basename as path_basename
-from PyQt4 import QtCore, QtGui, uic
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+#import QtCore, QtWidgets, uic
 import icons
 
 from const import *
@@ -23,7 +25,7 @@ Widget = namedtuple('Widget', 'inst ext mode')
 WidgetClipboard = namedtuple('WidgetClipboard', 'widget template')
 
 def process_args():
-    parser = argparse.ArgumentParser(version=str(version), description=description)
+    parser = argparse.ArgumentParser(description=description)
 
     mode_group = parser.add_argument_group('Mode', 'Define in which mode start {} (Live mode will run if none specified)'.format(prog_name))
     mode_exc = mode_group.add_mutually_exclusive_group()
@@ -49,7 +51,7 @@ def process_args():
 
 
 
-class Win(QtGui.QMainWindow):
+class Win(QtWidgets.QMainWindow):
     widgetChanged = QtCore.pyqtSignal(object)
     widgetUpdated = QtCore.pyqtSignal(object, bool)
     outputChanged = QtCore.pyqtSignal()
@@ -58,7 +60,7 @@ class Win(QtGui.QMainWindow):
     internal_signal = QtCore.pyqtSignal(object)
 
     def __init__(self, mode='live', map_file=None, config=None, backend='alsa'):
-        QtGui.QMainWindow.__init__(self, parent=None)
+        QtWidgets.QMainWindow.__init__(self, parent=None)
         uic.loadUi('launchcontrol.ui', self)
         #TODO: riscrivi meglio 'sta roba, usa il mode. pirla.
         self.mode = {'mapping': MapMode, 'editor': EditMode, 'live': LiveMode}.get(mode, LiveMode)
@@ -78,14 +80,14 @@ class Win(QtGui.QMainWindow):
             self.router.mididings_exit.connect(self.router_thread.quit)
             self.router_thread.started.connect(self.router.mididings_run)
             if self.mode == MapMode:
-                saveAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_DialogSaveButton), '&Save mapping', self)
+                saveAction = QAction(self.getIcon(QtWidgets.QStyle.SP_DialogSaveButton), '&Save mapping', self)
                 saveAction.setShortcut('Ctrl+S')
                 saveAction.triggered.connect(self.map_save)
-                saveAsAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_DialogSaveButton), '&Save mapping as...', self)
+                saveAsAction = QAction(self.getIcon(QtWidgets.QStyle.SP_DialogSaveButton), '&Save mapping as...', self)
                 saveAsAction.triggered.connect(self.map_save_as)
                 self.file_menu.addActions([saveAction, saveAsAction])
                 self.file_menu.addSeparator()
-                self.template_clear_action = QtGui.QAction('Clear template', self)
+                self.template_clear_action = QAction('Clear template', self)
                 self.template_clear_action.triggered.connect(self.mapping_template_clear)
                 self.template_menu.addAction(self.template_clear_action)
                 self.router.midi_signal.connect(self.midi_map)
@@ -106,10 +108,10 @@ class Win(QtGui.QMainWindow):
                 pass
             self.startupbox_run()
         else:
-            saveAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_DialogSaveButton), '&Save config', self)
+            saveAction = QAction(self.getIcon(QtWidgets.QStyle.SP_DialogSaveButton), '&Save config', self)
             saveAction.setShortcut('Ctrl+S')
             saveAction.triggered.connect(self.config_save)
-            saveAsAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_DialogSaveButton), '&Save config as...', self)
+            saveAsAction = QAction(self.getIcon(QtWidgets.QStyle.SP_DialogSaveButton), '&Save config as...', self)
             saveAsAction.triggered.connect(self.config_save_as)
             self.file_menu.addActions([saveAction, saveAsAction])
             self.file_menu.addSeparator()
@@ -117,35 +119,35 @@ class Win(QtGui.QMainWindow):
             self.template_clipcut = False
             self.widget_clipboard = None
             self.widget_clipcut = False
-            rename_action = QtGui.QAction('Rename', self)
+            rename_action = QAction('Rename', self)
             rename_action.triggered.connect(lambda: self.template_rename_dialog(template=self.template))
             self.template_menu.addAction(rename_action)
-            copy_action = QtGui.QAction('Copy', self)
+            copy_action = QAction('Copy', self)
             copy_action.triggered.connect(lambda: self.template_copy(template=self.template))
             self.template_menu.addAction(copy_action)
-            cut_action = QtGui.QAction('Cut', self)
+            cut_action = QAction('Cut', self)
             cut_action.triggered.connect(lambda: self.template_cut(template=self.template))
             self.template_menu.addAction(cut_action)
-            paste_action = QtGui.QAction('Paste', self)
+            paste_action = QAction('Paste', self)
             paste_action.baseText = 'Paste'
             paste_action.preText = 'from'
             paste_action.triggered.connect(lambda: self.template_paste(template=self.template))
             paste_action.setEnabled(False)
             self.template_menu.addAction(paste_action)
-            replace_action = QtGui.QAction('Replace', self)
+            replace_action = QAction('Replace', self)
             replace_action.baseText = 'Replace'
             replace_action.preText = 'with'
             replace_action.triggered.connect(lambda: self.template_replace(template=self.template))
             replace_action.setEnabled(False)
             self.template_menu.addAction(replace_action)
-            swap_action = QtGui.QAction('Swap', self)
+            swap_action = QAction('Swap', self)
             swap_action.baseText = 'Swap'
             swap_action.preText = 'with'
             swap_action.triggered.connect(lambda: self.editor_template_swap(dest_template=self.template))
             swap_action.setEnabled(False)
             self.template_menu.addAction(swap_action)
             self.template_menu_actions = paste_action, replace_action, swap_action
-            self.template_clear_action = QtGui.QAction('Clear template', self)
+            self.template_clear_action = QAction('Clear template', self)
             self.template_clear_action.triggered.connect(lambda: self.editor_template_clear(template=self.template))
             self.template_menu.addAction(self.template_clear_action)
 
@@ -154,14 +156,14 @@ class Win(QtGui.QMainWindow):
 #            self.setWindowTitle('{} - Editor {}'.format(prog_name, '({})'.format(self.config) if self.config else ''))
             self.operation_start = self.editor_start
             self.dataChanged.connect(self.data_changed)
-        quitAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_DialogCloseButton), '&Quit', self)
+        quitAction = QAction(self.getIcon(QtWidgets.QStyle.SP_DialogCloseButton), '&Quit', self)
         quitAction.setShortcut('Ctrl+Q')
-        quitAction.triggered.connect(QtGui.qApp.quit)
+        quitAction.triggered.connect(QtWidgets.QApplication.quit)
         self.file_menu.addAction(quitAction)
-        aboutAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_DialogHelpButton), 'About &{}'.format(prog_name), self)
+        aboutAction = QAction(self.getIcon(QtWidgets.QStyle.SP_DialogHelpButton), 'About &{}'.format(prog_name), self)
         aboutAction.triggered.connect(self.about_box)
         self.help_menu.addAction(aboutAction)
-        aboutQtAction = QtGui.QAction(self.getIcon(QtGui.QStyle.SP_TitleBarMenuButton), 'About &Qt', self)
+        aboutQtAction = QAction(self.getIcon(QtWidgets.QStyle.SP_TitleBarMenuButton), 'About &Qt', self)
         aboutQtAction.triggered.connect(self.about_qt)
         self.help_menu.addAction(aboutQtAction)
 #        self.template_connect(mode)
@@ -176,7 +178,7 @@ class Win(QtGui.QMainWindow):
         if not simple:
             self.show()
             return
-        self.simple = QtGui.QWidget()
+        self.simple = QtWidgets.QWidget()
         lbl_basesize = self.template_lbl.size()
         tab_basesize = self.templates_tab.size()
         self.template_lbl.setParent(self.simple)
@@ -229,28 +231,28 @@ class Win(QtGui.QMainWindow):
         </ul>
         </p>
         '''.format(prog_name, version)
-        QtGui.QMessageBox.about(self, prog_name, text)
+        QtWidgets.QMessageBox.about(self, prog_name, text)
 
     def about_qt(self):
-        QtGui.QMessageBox.aboutQt(self, 'About Qt')
+        QtWidgets.QMessageBox.aboutQt(self, 'About Qt')
 
 
     def startupbox_resizeEvent(self, event):
-        QtGui.QWidget.resizeEvent(self.startup_box, event)
+        QtWidgets.QWidget.resizeEvent(self.startup_box, event)
         self.startup_box.setFixedSize(self.startup_box.parent().size())
 
     def startupbox_setText(self, template=0):
         self.startup_box.setText('<p align=\'center\'>Preparing LaunchPad, please wait...<br>Preparing template {} of 16</p>'.format(template+1))
 
     def startupbox_run(self):
-        self.startup_box = QtGui.QMessageBox(self)
+        self.startup_box = QtWidgets.QMessageBox(self)
         self.startupbox_setText()
         self.startup_box.setWindowFlags(QtCore.Qt.Widget)
         palette = self.startup_box.palette()
         palette.setColor(self.startup_box.backgroundRole(), QtGui.QColor(200, 200, 200, 230))
         self.startup_box.setAutoFillBackground(True)
         self.startup_box.setPalette(palette)
-        self.startup_box.setStandardButtons(QtGui.QMessageBox.NoButton)
+        self.startup_box.setStandardButtons(QtWidgets.QMessageBox.NoButton)
         self.startup_box.resizeEvent = self.startupbox_resizeEvent
         self.startup_box.open()
 
@@ -338,35 +340,35 @@ class Win(QtGui.QMainWindow):
         else:
             self.templateRenamed.connect(self.template_rename)
             self.template_listview.currentChanged = self.template_indexChanged
-            rename_action = QtGui.QAction('Rename', self.template_listview)
+            rename_action = QAction('Rename', self.template_listview)
             rename_action.triggered.connect(self.template_rename_dialog)
             self.template_listview.addAction(rename_action)
-            copy_action = QtGui.QAction('Copy', self.template_listview)
+            copy_action = QAction('Copy', self.template_listview)
             copy_action.triggered.connect(self.template_copy)
             self.template_listview.addAction(copy_action)
-            cut_action = QtGui.QAction('Cut', self.template_listview)
+            cut_action = QAction('Cut', self.template_listview)
             cut_action.triggered.connect(self.template_cut)
             self.template_listview.addAction(cut_action)
-            paste_action = QtGui.QAction('Paste', self.template_listview)
+            paste_action = QAction('Paste', self.template_listview)
             paste_action.baseText = 'Paste'
             paste_action.preText = 'from'
             paste_action.triggered.connect(self.template_paste)
             paste_action.setEnabled(False)
             self.template_listview.addAction(paste_action)
-            replace_action = QtGui.QAction('Replace', self.template_listview)
+            replace_action = QAction('Replace', self.template_listview)
             replace_action.baseText = 'Replace'
             replace_action.preText = 'with'
             replace_action.triggered.connect(self.template_replace)
             replace_action.setEnabled(False)
             self.template_listview.addAction(replace_action)
-            swap_action = QtGui.QAction('Swap', self.template_listview)
+            swap_action = QAction('Swap', self.template_listview)
             swap_action.baseText = 'Swap'
             swap_action.preText = 'with'
             swap_action.triggered.connect(self.editor_template_swap)
             swap_action.setEnabled(False)
             self.template_listview.addAction(swap_action)
             self.template_actions = paste_action, replace_action, swap_action
-            self.listview_clear_action = QtGui.QAction('Clear template', self.template_listview)
+            self.listview_clear_action = QAction('Clear template', self.template_listview)
             self.listview_clear_action.triggered.connect(self.editor_template_clear)
             self.template_listview.addAction(self.listview_clear_action)
 
@@ -378,7 +380,7 @@ class Win(QtGui.QMainWindow):
                 else:
                     template = template.name
                     has_text = True
-                enabled = any(x for x in self.conf_dict[t].values())
+                enabled = any(x for x in list(self.conf_dict[t].values()))
                 item = QtGui.QStandardItem(str(self.template_list[t]))
                 item.id = t
                 item.baseForeground = item.foreground()
@@ -407,8 +409,8 @@ class Win(QtGui.QMainWindow):
             item = self.template_model.itemFromIndex(self.template_listview.currentIndex())
             template = item.id
             default_text = item.text()
-        print template
-        template_name, res = QtGui.QInputDialog.getText(self, 'Template Name', 'Enter template name', QtGui.QLineEdit.Normal, default_text)
+        print(template)
+        template_name, res = QtWidgets.QInputDialog.getText(self, 'Template Name', 'Enter template name', QtGui.QLineEdit.Normal, default_text)
         if res:
             self.templateRenamed.emit(template, str(template_name.toLatin1()))
             self.dataChanged.emit()
@@ -421,7 +423,7 @@ class Win(QtGui.QMainWindow):
             template = templateclass.id
             enabled = templateclass.enabled
         else:
-            enabled = any([True if (widget_dict and widget_dict.get('enabled', True)) else False for widget, widget_dict in self.conf_dict[template].items()])
+            enabled = any([True if (widget_dict and widget_dict.get('enabled', True)) else False for widget, widget_dict in list(self.conf_dict[template].items())])
         if not enabled:
             self.template_actions_enable(False)
             return
@@ -445,16 +447,16 @@ class Win(QtGui.QMainWindow):
                 continue
             dest_widget_data = dest_dict.get(widget)
             if not continue_bool and (dest_widget_data is not None and len(dest_widget_data)):
-                res = QtGui.QMessageBox.question(self, 'Overwrite?', 
+                res = QtWidgets.QMessageBox.question(self, 'Overwrite?',
                     '''Mapping for {} in template {} is going to be overwritten, continue?'''.format(
-                    widget.readable, self.template_list[template].name), 
-                    buttons=QtGui.QMessageBox.YesToAll | QtGui.QMessageBox.Yes | QtGui.QMessageBox.No | QtGui.QMessageBox.Abort)
-                if res == QtGui.QMessageBox.Abort:
+                    widget.readable, self.template_list[template].name),
+                    buttons=QtWidgets.QMessageBox.YesToAll | QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Abort)
+                if res == QtWidgets.QMessageBox.Abort:
                     self.template_listview.setCurrentIndex(self.template_model.index(self.template, 0))
                     return
-                elif res == QtGui.QMessageBox.No:
+                elif res == QtWidgets.QMessageBox.No:
                     continue
-                elif res == QtGui.QMessageBox.YesToAll:
+                elif res == QtWidgets.QMessageBox.YesToAll:
                     continue_bool = True
             dest_dict[widget] = source_widget_data
         self.conf_dict[template] = dest_dict
@@ -514,11 +516,11 @@ class Win(QtGui.QMainWindow):
         if template == None:
             dest_item = self.template_model.itemFromIndex(self.template_listview.currentIndex())
             template = dest_item.id
-        dest_dict = [True if widget_data is not None and widget_data.get('enabled', True) else False for widget_data in self.conf_dict[template].values()]
+        dest_dict = [True if widget_data is not None and widget_data.get('enabled', True) else False for widget_data in list(self.conf_dict[template].values())]
         if any(dest_dict):
-            res = QtGui.QMessageBox.question(self, 'Template not empty', 'Template {} is not empty, replace it?'.format(self.template_list[template]), 
-                buttons=QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-            if res == QtGui.QMessageBox.No:
+            res = QtWidgets.QMessageBox.question(self, 'Template not empty', 'Template {} is not empty, replace it?'.format(self.template_list[template]),
+                buttons=QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+            if res == QtWidgets.QMessageBox.No:
                 return
             self.template_listview.setCurrentIndex(self.template_model.index(self.template, 0))
         self.conf_dict[template] = copy(self.conf_dict[self.template_clipboard])
@@ -595,11 +597,11 @@ class Win(QtGui.QMainWindow):
         if template == None:
             item = self.template_model.itemFromIndex(self.template_listview.currentIndex())
             template = item.id
-        dest_dict = [True if widget_data is not None and widget_data.get('enabled', True) else False for widget_data in self.conf_dict[template].values()]
+        dest_dict = [True if widget_data is not None and widget_data.get('enabled', True) else False for widget_data in list(self.conf_dict[template].values())]
         if any(dest_dict):
-            res = QtGui.QMessageBox.question(self, 'Template not empty', 'Template {} is not empty, clear it?'.format(self.template_list[template]), 
-                buttons=QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-            if res == QtGui.QMessageBox.No:
+            res = QtWidgets.QMessageBox.question(self, 'Template not empty', 'Template {} is not empty, clear it?'.format(self.template_list[template]),
+                buttons=QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+            if res == QtWidgets.QMessageBox.No:
                 return
         for widget in self.widget_order:
             self.conf_dict[template][widget] = None
@@ -660,37 +662,37 @@ class Win(QtGui.QMainWindow):
         self.savemap_btn.clicked.connect(self.map_save)
         self.automap_enabled = False
         self.singlemap_enabled = False
-        self.map_dialog = QtGui.QMessageBox(self)
+        self.map_dialog = QtWidgets.QMessageBox(self)
         self.map_dialog.setText('Mapping')
 #        self.map_dialog.setWindowTitle('prot')
         self.map_dialog.setModal(True)
-        self.map_dialog.setStandardButtons(QtGui.QMessageBox.Abort)
+        self.map_dialog.setStandardButtons(QtWidgets.QMessageBox.Abort)
         self.map_dialog.finished.connect(self.single_map_stop)
-        self.map_confirm = QtGui.QMessageBox(self)
+        self.map_confirm = QtWidgets.QMessageBox(self)
         self.map_confirm.setWindowTitle('Event conflict!')
         self.map_confirm.setModal(True)
-        self.map_confirm.setStandardButtons(QtGui.QMessageBox.Ok|QtGui.QMessageBox.Cancel)
-        self.map_ext_dialog = QtGui.QDialog(self)
+        self.map_confirm.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+        self.map_ext_dialog = QtWidgets.QDialog(self)
         self.map_ext_dialog.setWindowTitle('Set range')
         self.map_ext_dialog.setModal(True)
-        grid = QtGui.QGridLayout(self.map_ext_dialog)
-        self.map_ext_dialog.caption = QtGui.QLabel(self.map_ext_dialog)
+        grid = QtWidgets.QGridLayout(self.map_ext_dialog)
+        self.map_ext_dialog.caption = QtWidgets.QLabel(self.map_ext_dialog)
         grid.addWidget(self.map_ext_dialog.caption, 0, 0, 1, 2)
-        self.map_ext_dialog.max_lbl = QtGui.QLabel('Maximum', self.map_ext_dialog)
+        self.map_ext_dialog.max_lbl = QtWidgets.QLabel('Maximum', self.map_ext_dialog)
         grid.addWidget(self.map_ext_dialog.max_lbl, 1, 0)
-        self.map_ext_dialog.max_spin = QtGui.QSpinBox(self.map_ext_dialog)
+        self.map_ext_dialog.max_spin = QtWidgets.QSpinBox(self.map_ext_dialog)
         self.map_ext_dialog.max_spin.setMinimum(0)
         self.map_ext_dialog.max_spin.setMaximum(127)
         self.map_ext_dialog.max_spin.setValue(127)
         grid.addWidget(self.map_ext_dialog.max_spin, 1, 1)
-        self.map_ext_dialog.min_lbl = QtGui.QLabel('Minimum', self.map_ext_dialog)
+        self.map_ext_dialog.min_lbl = QtWidgets.QLabel('Minimum', self.map_ext_dialog)
         grid.addWidget(self.map_ext_dialog.min_lbl, 2, 0)
-        self.map_ext_dialog.min_spin = QtGui.QSpinBox(self.map_ext_dialog)
+        self.map_ext_dialog.min_spin = QtWidgets.QSpinBox(self.map_ext_dialog)
         self.map_ext_dialog.min_spin.setMinimum(0)
         self.map_ext_dialog.min_spin.setMaximum(127)
         grid.addWidget(self.map_ext_dialog.min_spin, 2, 1)
 
-        invert_btn = QtGui.QPushButton('Invert values', self.map_ext_dialog)
+        invert_btn = QtWidgets.QPushButton('Invert values', self.map_ext_dialog)
         def invertValues():
             min_value = self.map_ext_dialog.min_spin.value()
             max_value = self.map_ext_dialog.max_spin.value()
@@ -703,11 +705,11 @@ class Win(QtGui.QMainWindow):
         invert_btn.clicked.connect(invertValues)
         grid.addWidget(invert_btn, 3, 1)
 
-        button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Reset)
+        button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Reset)
         grid.addWidget(button_box, 4, 0, 1, 2)
         button_box.accepted.connect(self.map_ext_dialog.accept)
         button_box.rejected.connect(self.map_ext_dialog.reject)
-        button_box.button(QtGui.QDialogButtonBox.Reset).clicked.connect(resetValues)
+        button_box.button(QtWidgets.QDialogButtonBox.Reset).clicked.connect(resetValues)
         def setTextData(widget, ext):
 #            widget = widget_data.inst
 #            ext = widget_data.ext
@@ -716,14 +718,14 @@ class Win(QtGui.QMainWindow):
             self.map_ext_dialog.caption.setText('Set range values for <b>{}</b>:'.format(widget.readable))
             self.map_ext_dialog.min_spin.setValue(ext[0])
             self.map_ext_dialog.max_spin.setValue(ext[1])
-            if isinstance(widget, QtGui.QPushButton):
+            if isinstance(widget, QtWidgets.QPushButton):
                 self.map_ext_dialog.min_lbl.setText('<b>OFF</b>')
                 self.map_ext_dialog.max_lbl.setText('<b>ON</b>')
             else:
                 self.map_ext_dialog.min_lbl.setText('Minimum')
                 self.map_ext_dialog.max_lbl.setText('Maximum')
         self.map_ext_dialog.setTextData = setTextData
-            
+
 
         self.automap_current = 0
         self.map_toggle_check = None
@@ -731,7 +733,7 @@ class Win(QtGui.QMainWindow):
 
         for widget in self.widget_order:
             widget.customContextMenuRequested.connect(self.mapping_widget_menu)
-            if not isinstance(widget, QtGui.QPushButton):
+            if not isinstance(widget, QtWidgets.QPushButton):
                 widget.siblingLabel.customContextMenuRequested.connect(self.mapping_widget_menu)
 
 #        led_list = [(i, 0) for i in range(48)]
@@ -751,33 +753,33 @@ class Win(QtGui.QMainWindow):
                         for line in cf.readlines():
                             mapping_raw += line
                 except:
-                    print 'Default mapping not found!'
+                    print('Default mapping not found!')
         mapping_raw = mapping_raw.replace('CTRL', 'md.CTRL')
         mapping_raw = mapping_raw.replace('NOTE', 'md.NOTE')
         try:
-            for k, v in eval(mapping_raw).items():
+            for k, v in list(eval(mapping_raw).items()):
                 btn = self.temp_id_group.button(k)
                 btn.state = True
                 setBold(btn)
-                self.map_dict[k] = {ctrl:Widget(getattr(self, '{}'.format(widget)), ext, mode) for ctrl, (widget, ext, mode) in v.items()}
+                self.map_dict[k] = {ctrl:Widget(getattr(self, '{}'.format(widget)), ext, mode) for ctrl, (widget, ext, mode) in list(v.items())}
             leds = []
-            for ctrl, widget_data in self.map_dict[0].items():
+            for ctrl, widget_data in list(self.map_dict[0].items()):
                 widget = widget_data.inst
                 widget.siblingLabel.setText('Ch{},{}{}'.format(ctrl[0], 'CC' if ctrl[1] == md.CTRL else 'N', ctrl[2]))
                 if widget.siblingLed is not None:
                     leds.append((widget.siblingLed, widget.ledSet))
             set_led(0, *leds)
         except Exception as e:
-            print e
+            print(e)
         self.enable_template_buttons(False)
         self.automap_chkbtn.setEnabled(False)
         self.clear_template_leds()
-        if not any([True if len(d) else False for d in self.map_dict.values()]):
+        if not any([True if len(d) else False for d in list(self.map_dict.values())]):
             self.savemap_btn.setEnabled(False)
 
 #        for widget in self.map_dict[0].values():
 #            widget.inst.map_action.setText('Remap')
-#            if isinstance(widget.inst, QtGui.QPushButton):
+#            if isinstance(widget.inst, QtWidgets.QPushButton):
 ##                widget.inst.toggle_action.setCheckable(True)
 #                if widget.mode == Toggle:
 #                    widget.inst.toggle_action.setChecked(True)
@@ -785,19 +787,19 @@ class Win(QtGui.QMainWindow):
 
     def mapping_widget_menu(self, pos):
         sender_widget = self.sender()
-        if isinstance(sender_widget, QtGui.QLabel):
+        if isinstance(sender_widget, QtWidgets.QLabel):
             widget = sender_widget.siblingWidget
         else:
             widget = sender_widget
         widget_event = None
-        for event, widget_data in self.map_dict[self.template].items():
+        for event, widget_data in list(self.map_dict[self.template].items()):
             if widget_data.inst == widget:
                 widget_event = event
                 break
         menu = QtGui.QMenu(self)
-        map_action = QtGui.QAction(widget)
-        ext_action = QtGui.QAction('Set range', widget)
-        clear_action = QtGui.QAction('Clear', widget)
+        map_action = QAction(widget)
+        ext_action = QAction('Set range', widget)
+        clear_action = QAction('Clear', widget)
         if not widget_event:
             map_action.setText('Map')
             ext_action.setEnabled(False)
@@ -808,8 +810,8 @@ class Win(QtGui.QMainWindow):
         ext_action.triggered.connect(self.single_map_ext)
         clear_action.triggered.connect(self.single_map_clear)
         menu.addActions([map_action, ext_action, clear_action])
-        if isinstance(widget, QtGui.QPushButton):
-            toggle_action = QtGui.QAction('Toggle', widget)
+        if isinstance(widget, QtWidgets.QPushButton):
+            toggle_action = QAction('Toggle', widget)
             toggle_action.setCheckable(True)
             toggle_action.triggered.connect(self.single_map_toggle_set)
             menu.addAction(toggle_action)
@@ -818,13 +820,13 @@ class Win(QtGui.QMainWindow):
     def mapping_template_clear(self):
         if not len(self.map_dict[self.template]):
             return
-        res = QtGui.QMessageBox.question(self, 'Clear template?', 'Do you want to clear the current {} template {}?'.format(*template_str(self.template)), 
-                buttons=QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-        if res == QtGui.QMessageBox.Yes:
+        res = QtWidgets.QMessageBox.question(self, 'Clear template?', 'Do you want to clear the current {} template {}?'.format(*template_str(self.template)),
+                buttons=QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        if res == QtWidgets.QMessageBox.Yes:
             self.map_dict[self.template] = {}
             for widget in self.widget_order:
                 widget.siblingLabel.setText('')
-                if isinstance(widget, QtGui.QPushButton):
+                if isinstance(widget, QtWidgets.QPushButton):
                     setBold(widget, False)
             set_led(self.template, *[(i, 0) for i in range(48)])
             setBold(self.temp_id_group.button(self.template), False)
@@ -858,7 +860,7 @@ class Win(QtGui.QMainWindow):
                 for widget in self.widget_order:
                     if widget.siblingLed is None:
                         continue
-                    if widget in [w.inst for w in self.map_dict[template_iter].values()]:
+                    if widget in [w.inst for w in list(self.map_dict[template_iter].values())]:
                         leds.append((widget.siblingLed, widget.ledSet))
                     else:
                         leds.append((widget.siblingLed, 0))
@@ -867,7 +869,7 @@ class Win(QtGui.QMainWindow):
                     clear(template_iter+1)
                     return
                 leds = [(i, 0) for i in range(48)]
-                for widget in self.map_dict[template_iter].values():
+                for widget in list(self.map_dict[template_iter].values()):
                     if widget.siblingLed is None: continue
                     leds[widget.siblingLed] = (widget.siblingLed, widget.ledSet)
             set_led(template_iter, *leds)
@@ -881,17 +883,17 @@ class Win(QtGui.QMainWindow):
             sender_widget = widget
         else:
             sender_widget = self.sender().parent()
-        if sender_widget not in [w.inst for w in self.map_dict[self.template].values()]:
+        if sender_widget not in [w.inst for w in list(self.map_dict[self.template].values())]:
             return
         sender_widget.siblingLabel.setText('')
         setBold(sender_widget, False)
-        for ctrl, widget in self.map_dict[self.template].items():
+        for ctrl, widget in list(self.map_dict[self.template].items()):
             if widget.inst == sender_widget:
                 break
         del self.map_dict[self.template][ctrl]
         if sender_widget.siblingLed is not None:
             set_led(self.template, (sender_widget.siblingLed, 0))
-        if not any([True if len(d) else False for d in self.map_dict.values()]):
+        if not any([True if len(d) else False for d in list(self.map_dict.values())]):
             self.savemap_btn.setEnabled(False)
         self.map_template_check()
         self.dataChanged.emit()
@@ -902,10 +904,10 @@ class Win(QtGui.QMainWindow):
         else:
             sender_widget = self.sender().parent()
         setBold(sender_widget, value)
-        for e, w in self.map_dict[self.template].items():
+        for e, w in list(self.map_dict[self.template].items()):
             if w.inst == sender_widget:
                 self.map_dict[self.template][e] = Widget(w.inst, w.ext, Toggle if value else Push)
-                
+
 #        sender_widget.setCheckable(value)
 
     def map_template_check(self):
@@ -919,7 +921,7 @@ class Win(QtGui.QMainWindow):
     def map_confirm_response(self, old_widget, new_widget, event, is_set):
         event_type = 'CC' if event.type == md.CTRL else 'NOTE'
         if is_set:
-            print is_set
+            print(is_set)
             self.map_confirm.setText('{} already mapped by {} {} on channel {}.\nAlso, {} is already set.\nRemap this event to it?'.format(old_widget, event_type, event.data1, event.channel, new_widget))
         else:
             self.map_confirm.setText('{} already mapped by {} {} on channel {}.\nRemap this event to {}?'.format(old_widget, event_type, event.data1, event.channel, new_widget))
@@ -928,7 +930,7 @@ class Win(QtGui.QMainWindow):
     def single_map_ext(self):
         sender_widget = self.sender().parent()
         widget_is_set = False
-        for event, widget_data in self.map_dict[self.template].items():
+        for event, widget_data in list(self.map_dict[self.template].items()):
             widget = widget_data.inst
             if widget == sender_widget:
                 widget_is_set = True
@@ -946,7 +948,7 @@ class Win(QtGui.QMainWindow):
 
     def single_map_start(self):
         sender_widget = self.sender().parent()
-        if sender_widget in [w.inst for w in self.map_dict[self.template].values()]:
+        if sender_widget in [w.inst for w in list(self.map_dict[self.template].values())]:
             #TODO: assegna anche widget già impostati
             #TODO: ma che cazzo volevi dire qui sopra?
             pass
@@ -963,7 +965,7 @@ class Win(QtGui.QMainWindow):
             return
 #        self.map_dict[self.template][(event.channel, event_type, event.data1)] = widget_data[0]
         sender_widget = self.widget_order[self.automap_current]
-        if sender_widget not in [w.inst for w in self.map_dict[self.template].values()]:
+        if sender_widget not in [w.inst for w in list(self.map_dict[self.template].values())]:
             if self.automap_current < 24:
                 set_led(self.template, (self.automap_current, 0))
             elif 24 <= self.automap_current < 32:
@@ -979,18 +981,18 @@ class Win(QtGui.QMainWindow):
             for btn in self.widget_order[32:]:
                 btn.setDown(False)
         self.automap_enabled = state
-        if not isinstance(self.sender(), QtGui.QPushButton):
+        if not isinstance(self.sender(), QtWidgets.QPushButton):
             self.automap_chkbtn.setEnabled(True)
         if state:
             self.enable_template_buttons(False)
-            if len(self.map_dict[self.template].values()) == len(self.widget_order):
+            if len(list(self.map_dict[self.template].values())) == len(self.widget_order):
                 self.automap_chkbtn.setChecked(False)
                 return
             start = 0
             start_set = False
             for i, widget in enumerate(self.widget_order):
                 label = widget.siblingLabel
-                if widget not in [w.inst for w in self.map_dict[self.template].values()]:
+                if widget not in [w.inst for w in list(self.map_dict[self.template].values())]:
                     label.setText('')
                     if not start_set:
                         widget.setFocus(True)
@@ -1012,7 +1014,7 @@ class Win(QtGui.QMainWindow):
                 set_led(self.template, (self.automap_current, 0), (self.automap_current+8, 0))
             else:
                 set_led(self.template, (self.automap_current-8, 0))
-            if not any([True if len(d) else False for d in self.map_dict.values()]):
+            if not any([True if len(d) else False for d in list(self.map_dict.values())]):
                 self.savemap_btn.setEnabled(False)
             else:
                 self.savemap_btn.setEnabled(True)
@@ -1025,7 +1027,7 @@ class Win(QtGui.QMainWindow):
                 event_type = event.type
             if (event.channel, event_type, event.data1) not in self.map_dict[self.template]:
                 widget = self.widget_order[self.automap_current]
-                if not isinstance(widget, QtGui.QPushButton):
+                if not isinstance(widget, QtWidgets.QPushButton):
                     ext = True
                     mode = Value
                 else:
@@ -1034,16 +1036,16 @@ class Win(QtGui.QMainWindow):
                         self.map_toggle_check = (event.channel, event_type, event.data1, event.data2)
                         widget.setDown(True)
                         return
-                    print 'new: {}, old: {}'.format((event.data1, event.data2), self.map_toggle_check[2:])
+                    print('new: {}, old: {}'.format((event.data1, event.data2), self.map_toggle_check[2:]))
                     if (event.channel, event_type, event.data1) != self.map_toggle_check[:3]:
-                        print 'non combacia'
+                        print('non combacia')
                         return
                     widget.setDown(False)
                     ext = event.data2, self.map_toggle_check[-1]
                     self.map_toggle_check = None
                     if ext == (0, 127):
                         ext = True
-                    if QtGui.QApplication.keyboardModifiers() == QtCore.Qt.ShiftModifier:
+                    if QtWidgets.QApplication.keyboardModifiers() == QtCore.Qt.ShiftModifier:
                         mode = Toggle
                         setBold(widget)
                     else:
@@ -1069,7 +1071,7 @@ class Win(QtGui.QMainWindow):
                         self.automap_current = 0
                         self.automap_chkbtn.setChecked(False)
                 else:
-                    widget_list = [w.inst for w in self.map_dict[self.template].values()]
+                    widget_list = [w.inst for w in list(self.map_dict[self.template].values())]
                     while self.widget_order[self.automap_current] in widget_list:
                         self.automap_current += 1
                         if self.automap_current == len(self.widget_order):
@@ -1093,7 +1095,7 @@ class Win(QtGui.QMainWindow):
             else:
                 event_type = event.type
             widget = self.widget_order[self.automap_current]
-            if not isinstance(widget, QtGui.QPushButton):
+            if not isinstance(widget, QtWidgets.QPushButton):
                 mode = Value
             else:
                 mode = Push
@@ -1102,18 +1104,18 @@ class Win(QtGui.QMainWindow):
             if widget_old and widget != widget_old.inst:
                 widget_old = widget_old.inst
                 widget_is_set = False
-                for c, w in self.map_dict[self.template].items():
+                for c, w in list(self.map_dict[self.template].items()):
                     if w.inst == widget:
                         widget_is_set = c
                         prev_widget_deleted = True
                         break
-                if self.map_confirm_response(widget_old.readable, widget.readable, event, widget_is_set) == QtGui.QMessageBox.Ok:
+                if self.map_confirm_response(widget_old.readable, widget.readable, event, widget_is_set) == QtWidgets.QMessageBox.Ok:
                     del self.map_dict[self.template][c]
                     map = True
                     widget_clear = self.map_dict[self.template].pop((event.channel, event_type, event.data1)).inst
                     if widget_clear != widget_old:
-                        print 'WTF?!'
-                        print widget_clear
+                        print('WTF?!')
+                        print(widget_clear)
                     else:
                         widget_clear.siblingLabel.setText('')
                         if widget_old.siblingLed is not None:
@@ -1125,7 +1127,7 @@ class Win(QtGui.QMainWindow):
                 map = True
             if map:
                 if not prev_widget_deleted:
-                    for c, w in self.map_dict[self.template].items():
+                    for c, w in list(self.map_dict[self.template].items()):
                         if w.inst == widget:
                             del self.map_dict[self.template][c]
                             break
@@ -1137,7 +1139,7 @@ class Win(QtGui.QMainWindow):
                     fader_id = int(str(widget.objectName())[-1])
                     for fader_led in range(2):
                         widget = eval('self.btn_{:02d}'.format(fader_id+8*fader_led))
-                        if widget in [w.inst for w in self.map_dict[self.template].values()]:
+                        if widget in [w.inst for w in list(self.map_dict[self.template].values())]:
                             if widget.siblingLed is not None:
                                 set_led(self.template, (widget.siblingLed, widget.ledSet))
                     #TODO: check for leds?
@@ -1152,7 +1154,7 @@ class Win(QtGui.QMainWindow):
 #            print 'ext: {}'.format(ext)
             mode = widget.mode
             widget = widget.inst
-            if isinstance(widget, QtGui.QPushButton):
+            if isinstance(widget, QtWidgets.QPushButton):
                 if event.type == md.NOTEON:
                     widget.setDown(True)
                     set_led(self.template, (widget.siblingLed, widget.ledTrigger))
@@ -1169,7 +1171,7 @@ class Win(QtGui.QMainWindow):
                         set_led(self.template, (widget.siblingLed, widget.ledSet))
                         widget.setDown(False)
             else:
-                if isinstance(widget, QtGui.QDial):
+                if isinstance(widget, QtWidgets.QDial):
                     set_led(self.template, (widget.siblingLed, widget.ledTrigger))
                     QtCore.QTimer.singleShot(200, lambda: set_led(self.template, (widget.siblingLed, widget.ledSet)))
                 else:
@@ -1177,11 +1179,11 @@ class Win(QtGui.QMainWindow):
                     non_led2 = self.widget_order[widget.id+16]
                     set_led(self.template, (non_led1.siblingLed, non_led1.ledTrigger))
                     set_led(self.template, (non_led2.siblingLed, non_led2.ledTrigger))
-                    if non_led1 in [w.inst for w in self.map_dict[self.template].values()]:
+                    if non_led1 in [w.inst for w in list(self.map_dict[self.template].values())]:
                         QtCore.QTimer.singleShot(200, lambda: set_led(self.template, (non_led1.siblingLed, non_led1.ledSet)))
                     else:
                         QtCore.QTimer.singleShot(200, lambda: set_led(self.template, (non_led1.siblingLed, 0)))
-                    if non_led2 in [w.inst for w in self.map_dict[self.template].values()]:
+                    if non_led2 in [w.inst for w in list(self.map_dict[self.template].values())]:
                         QtCore.QTimer.singleShot(200, lambda: set_led(self.template, (non_led2.siblingLed, non_led2.ledSet)))
                     else:
                         QtCore.QTimer.singleShot(200, lambda: set_led(self.template, (non_led2.siblingLed, 0)))
@@ -1205,7 +1207,7 @@ class Win(QtGui.QMainWindow):
                         fract = 127.0/(ext[1]-ext[0])
                         final = fract*(value-ext[0])
                         widget.setValue(final)
-                    
+
 
     def next_map_setup(self):
         self.map_template_check()
@@ -1221,7 +1223,7 @@ class Win(QtGui.QMainWindow):
                 for widget in self.widget_order:
                     if widget.siblingLed is None:
                         continue
-                    if widget in [w.inst for w in self.map_dict[self.template].values()]:
+                    if widget in [w.inst for w in list(self.map_dict[self.template].values())]:
                         leds.append((widget.siblingLed, widget.ledSet))
 #                    else:
 #                        leds.append((widget.siblingLed, 0))
@@ -1259,14 +1261,14 @@ class Win(QtGui.QMainWindow):
 
     def show_map(self):
         pairing = []
-        for ctrl, widget in self.map_dict[self.template].items():
+        for ctrl, widget in list(self.map_dict[self.template].items()):
             pairing.append('({},{},{}):\'{}\','.format(ctrl[0], 'CTRL' if ctrl[1] == md.CTRL else 'NOTE', ctrl[2], widget.inst.objectName()))
 #        pairing.sort()
         for p in pairing:
-            print p
+            print(p)
 
     def map_save_as(self):
-        if not any([True if len(d) else False for d in self.map_dict.values()]):
+        if not any([True if len(d) else False for d in list(self.map_dict.values())]):
             return None
         save_file = QtGui.QFileDialog.getSaveFileName(self, 'Save mapping to file', self.map_file if self.map_file else '', 'LaunchPad mappings (*.nlm)')
         if not save_file:
@@ -1274,7 +1276,7 @@ class Win(QtGui.QMainWindow):
         return self.map_write(str(save_file))
 
     def map_save(self):
-        if not any([True if len(d) else False for d in self.map_dict.values()]):
+        if not any([True if len(d) else False for d in list(self.map_dict.values())]):
             return None
         if not self.map_file:
             return self.map_save_as()
@@ -1285,11 +1287,11 @@ class Win(QtGui.QMainWindow):
         if not save_file:
             return None
         full_map = ['{']
-        for template, mapping in self.map_dict.items():
+        for template, mapping in list(self.map_dict.items()):
             if len(mapping):
                 full_map.append('{}: {{\n\n'.format(template))
                 temp_dict = {}
-                for ctrl, widget in self.map_dict[template].items():
+                for ctrl, widget in list(self.map_dict[template].items()):
                     temp_dict[widget.inst] = '\t({},{},{}): {},\n'.format(ctrl[0], 'CTRL' if ctrl[1] == md.CTRL else 'NOTE', ctrl[2], (str(widget.inst.objectName()), widget.ext, widget.mode))
                 for widget in self.widget_order:
                     if widget in temp_dict:
@@ -1302,7 +1304,7 @@ class Win(QtGui.QMainWindow):
         self.map_file = save_file
         self.title_set()
         return True
-        
+
     def routing_setup(self):
         mapping_raw = ''
         try:
@@ -1318,33 +1320,33 @@ class Win(QtGui.QMainWindow):
 #                    for line in cf.readlines():
 #                        mapping_raw += line
             except:
-                print 'Default mapping not found!'
+                print('Default mapping not found!')
         mapping_raw = mapping_raw.replace('CTRL', 'md.CTRL')
         mapping_raw = mapping_raw.replace('NOTE', 'md.NOTE')
         try:
-            for k, v in eval(mapping_raw).items():
-                self.map_dict[k] = {event:Widget(getattr(self, '{}'.format(widget)), ext, mode) for event, (widget, ext, mode) in v.items()}
+            for k, v in list(eval(mapping_raw).items()):
+                self.map_dict[k] = {event:Widget(getattr(self, '{}'.format(widget)), ext, mode) for event, (widget, ext, mode) in list(v.items())}
         except Exception as e:
-            print e
+            print(e)
 
         config_raw = ''
         try:
             with open(self.config, 'rb') as cf:
                 config_raw = eval(cf.read().replace('\n', ''))
         except:
-            print 'PDs!'
+            print('PDs!')
         config = {}
         self.template_groups = [[] for i in range(16)]
         self.template_list = [TemplateClass(self, i) for i in range(16)]
         out_ports = []
         try:
 #            out_ports = config_raw.get('output')
-            for t in config_raw.keys():
+            for t in list(config_raw.keys()):
                 if t == 'output':
                     out_ports = config_raw[t]
                     continue
                 config[t] = {}
-                for k, v in config_raw[t].items():
+                for k, v in list(config_raw[t].items()):
                     if k == 'id':
                         self.template_list[t].name = str(v)
                         continue
@@ -1355,7 +1357,7 @@ class Win(QtGui.QMainWindow):
                         continue
                     config[t][getattr(self, '{}'.format(k))] = v
         except Exception as e:
-            print e
+            print(e)
         temp_map_dict = {}
         self.reverse_map = {}
         for template in range(16):
@@ -1365,7 +1367,7 @@ class Win(QtGui.QMainWindow):
             if not len(config_dict):
                 temp_map_dict[template] = {}
                 continue
-            for event, (widget, ext, mode) in self.map_dict[template].items():
+            for event, (widget, ext, mode) in list(self.map_dict[template].items()):
                 if not widget in config_dict:
                     continue
                 event_chan, event_type, event_id = event
@@ -1381,7 +1383,7 @@ class Win(QtGui.QMainWindow):
                 pre_patch = None
                 if toggle:
                     toggle_range = MyCycle(patch_data.get('toggle_values', (0, 127)))
-                    toggle_patch = md.Process(lambda ev,  cycle=toggle_range: md.event.MidiEvent(ev.type, ev.port, ev.channel, ev.data1, cycle.next()))
+                    toggle_patch = md.Process(lambda ev,  cycle=toggle_range: md.event.MidiEvent(ev.type, ev.port, ev.channel, ev.data1, next(cycle)))
                     if mode == Toggle:
                         pre_patch = toggle_patch
                     elif event_type == md.CTRL:
@@ -1391,7 +1393,7 @@ class Win(QtGui.QMainWindow):
                 vrange = patch_data.get('range')
                 if vrange and not pre_patch:
                     range_start, range_end, range_type = patch_data.get('range_values', (0, 127, 0))
-                    if isinstance(widget, QtGui.QPushButton):
+                    if isinstance(widget, QtWidgets.QPushButton):
                         if event_type == md.CTRL:
                             pre_patch = [md.CtrlValueFilter(ext[0]) >> md.Ctrl(event_id, range_start), md.CtrlValueFilter(ext[1]) >> md.Ctrl(event_id, range_end)]
                         else:
@@ -1416,7 +1418,7 @@ class Win(QtGui.QMainWindow):
                         if (event_type == md.CTRL and event_id != ctrl_id) or event_type == md.NOTE:
                             conv_patch = md.Ctrl(ctrl_id, md.EVENT_DATA2)
                     elif convert == ToSysEx:
-                        print 'son qui'
+                        print('son qui')
                         convert_sysex, convert_id = patch_data.get('convert_values', ('F0 00 F7', 1))
                         convert_sysex = [int(x, 16) for x in convert_sysex.split()]
                         if event_type == md.NOTE:
@@ -1426,7 +1428,7 @@ class Win(QtGui.QMainWindow):
 #                            convert_sysex[convert_id] = md.EVENT_DATA2
                             sysex_start = convert_sysex[:convert_id]
                             sysex_end = convert_sysex[convert_id+1:]
-                            print convert_sysex
+                            print(convert_sysex)
                             conv_patch = md.Call(lambda ev, dest=dest, start=sysex_start, end=sysex_end: md.engine.output_event(md.event.SysExEvent(dest, start+[ev.data2]+end)))
 #                            conv_patch = md.Process(lambda ev, dest=dest, start=sysex_start, end=sysex_end: md.event.SysExEvent(dest, start+[ev.data2]+end))
                     else:
@@ -1442,7 +1444,7 @@ class Win(QtGui.QMainWindow):
                                     start = 0
                                 else:
                                     start = ext[0]
-                                conv_patch = [md.CtrlValueFilter(start) >> md.NoteOff(md.EVENT_VALUE, convert_vel), 
+                                conv_patch = [md.CtrlValueFilter(start) >> md.NoteOff(md.EVENT_VALUE, convert_vel),
                                               -md.CtrlValueFilter(start) >> md.NoteOn(md.EVENT_VALUE, convert_vel)] >> mdx.MakeMonophonic()
                         else:
                             if event_type == md.NOTE:
@@ -1455,7 +1457,7 @@ class Win(QtGui.QMainWindow):
                                     start = 0
                                 else:
                                     start = ext[0]
-                                conv_patch = [md.CtrlValueFilter(start) >> md.NoteOff(convert_note, md.EVENT_VALUE), 
+                                conv_patch = [md.CtrlValueFilter(start) >> md.NoteOff(convert_note, md.EVENT_VALUE),
                                               -md.CtrlValueFilter(start) >> md.NoteOn(convert_note, md.EVENT_VALUE)]
                 if pre_patch:
                     if conv_patch:
@@ -1512,7 +1514,7 @@ class Win(QtGui.QMainWindow):
             self.temp_id_group.button(template).state = True
             self.template_list[template].widget_list = [False for w in self.widget_order]
             dest_list = {}
-            for (chan, ctrl, value), signal in temp_map_dict[template].items():
+            for (chan, ctrl, value), signal in list(temp_map_dict[template].items()):
                 self.template_list[template].set_widget_signal(signal)
                 if signal.dest not in dest_list:
                     dest_list[signal.dest] = {chan: {ctrl: {value: signal}}}
@@ -1525,48 +1527,48 @@ class Win(QtGui.QMainWindow):
                         else:
                             dest_list[signal.dest][chan][ctrl][value] = signal
             scene_dict = {}
-            for dest, chan_dict in dest_list.items():
+            for dest, chan_dict in list(dest_list.items()):
 #            if len(dest_list) == 1:
                 #chan_dict > dest_list[port]
 #                chan_dict = dest_list.values()[0]
                 chan_split_dict = {}
-                for chan, ctrl_dict in chan_dict.items():
+                for chan, ctrl_dict in list(chan_dict.items()):
                     #TODO: Ottimizza sfruttando filtri per tutte le patch in Pass
                     if len(ctrl_dict) == 1:
-                        if ctrl_dict.keys()[0] == md.CTRL:
-                            scene = md.Split({md.CTRL: md.CtrlSplit({f:s.patch for f, s in ctrl_dict[md.CTRL].items()})})
+                        if list(ctrl_dict.keys())[0] == md.CTRL:
+                            scene = md.Split({md.CTRL: md.CtrlSplit({f:s.patch for f, s in list(ctrl_dict[md.CTRL].items())})})
                         else:
-                            scene = md.Split({md.NOTE: md.KeySplit({f:s.patch for f, s in ctrl_dict[md.NOTE].items()})})
+                            scene = md.Split({md.NOTE: md.KeySplit({f:s.patch for f, s in list(ctrl_dict[md.NOTE].items())})})
                     else:
-                        scene = md.Split({md.CTRL: md.CtrlSplit({f:s.patch for f, s in ctrl_dict[md.CTRL].items()}), 
-                                          md.NOTE: md.KeySplit({f:s.patch for f, s in ctrl_dict[md.NOTE].items()})})
-                    if dest_list.keys()[0] != 1:
-                        scene = md.Port(dest_list.keys()[0]) >> scene
+                        scene = md.Split({md.CTRL: md.CtrlSplit({f:s.patch for f, s in list(ctrl_dict[md.CTRL].items())}),
+                                          md.NOTE: md.KeySplit({f:s.patch for f, s in list(ctrl_dict[md.NOTE].items())})})
+                    if list(dest_list.keys())[0] != 1:
+                        scene = md.Port(list(dest_list.keys())[0]) >> scene
                     chan_split_dict[chan] = scene
                 if len(chan_split_dict) == 1:
-                    map_chans = [event[0] for event in self.map_dict[template].keys()]
+                    map_chans = [event[0] for event in list(self.map_dict[template].keys())]
                     do_chan_split = False
-                    for chan in chan_split_dict.keys():
+                    for chan in list(chan_split_dict.keys()):
                         if not chan in map_chans:
                             do_chan_split = True
                             break
                     if do_chan_split:
                         scene = md.ChannelSplit(chan_split_dict)
                     else:
-                        scene = chan_split_dict.values()[0]
+                        scene = list(chan_split_dict.values())[0]
                 else:
                     scene = md.ChannelSplit(chan_split_dict)
                 scene_dict[dest] = scene
             if len(scene_dict) == 1:
-                if scene_dict.keys()[0] == 1:
-                    template_scene = scene_dict.values()[0]
+                if list(scene_dict.keys())[0] == 1:
+                    template_scene = list(scene_dict.values())[0]
                 else:
-                    template_scene = md.Port(scene_dict.keys()[0]) >> scene_dict.values()[0]
+                    template_scene = md.Port(list(scene_dict.keys())[0]) >> list(scene_dict.values())[0]
             else:
                 temp_patch_dict = {}
-                for dest, patch in scene_dict.items():
+                for dest, patch in list(scene_dict.items()):
                     temp_patch_dict[dest] = patch
-                template_scene = [md.Port(dest) >> temp_patch_dict[dest] for dest in temp_patch_dict.keys()]
+                template_scene = [md.Port(dest) >> temp_patch_dict[dest] for dest in list(temp_patch_dict.keys())]
             #TODO: implement name inside TemplateClass
             template_id = self.template_list[template].name
             scenes[template+1] = md.Scene('{} template {}'.format(*template_str(template)) if isinstance(template_id, int) else 'Template {}'.format(template_id), template_scene)
@@ -1581,17 +1583,17 @@ class Win(QtGui.QMainWindow):
             update_func = self.template_manual_update
         else:
             update_func = self.template_manual_update_with_groups
-        
+
         for b in range(16):
             btn = eval('self.template_btn_{:02d}'.format(b))
             btn.toggled.connect(update_func)
             btn.state = None
             self.temp_id_group.setId(btn, b)
         for t in range(1, 9):
-            ut_action = QtGui.QAction(self)
+            ut_action = QAction(self)
             ut_action.setShortcut('Alt+{}'.format(t))
             ut_action.triggered.connect(lambda x, t=t: self.template_shortcut(t-1))
-            ft_action = QtGui.QAction(self)
+            ft_action = QAction(self)
             ft_action.setShortcut('Alt+Shift+{}'.format(t))
             ft_action.triggered.connect(lambda x, t=t: self.template_shortcut(t+7))
             self.addActions([ut_action, ft_action])
@@ -1652,7 +1654,7 @@ class Win(QtGui.QMainWindow):
     def template_label_update(self):
         if self.mode == MapMode:
             widget_dict = {}
-            for event, widget_data in self.map_dict[self.template].items():
+            for event, widget_data in list(self.map_dict[self.template].items()):
                 widget_dict[widget_data.inst] = (event, widget_data.ext, widget_data.mode)
             for widget in self.widget_order:
                 event, ext, mode = widget_dict.get(widget, (None, None, None))
@@ -1660,7 +1662,7 @@ class Win(QtGui.QMainWindow):
                     channel, ctrl, data1 = event
                     widget.siblingLabel.setText('Ch{},{}{}'.format(channel, 'CC' if ctrl == md.CTRL else 'N', data1))
                     try:
-                        if isinstance(widget, QtGui.QPushButton):
+                        if isinstance(widget, QtWidgets.QPushButton):
                             setBold(widget, True if mode==Toggle else False)
 #                            widget.setCheckable(True if mode==Toggle else False)
                     except:
@@ -1668,20 +1670,20 @@ class Win(QtGui.QMainWindow):
                 else:
                     widget.siblingLabel.setText('')
                     try:
-                        if isinstance(widget, QtGui.QPushButton):
+                        if isinstance(widget, QtWidgets.QPushButton):
                             setBold(widget, False)
 #                            widget.setCheckable(False)
                     except:
                         pass
             return
-        widget_dict = {signal.widget:signal for signal in self.map_dict[self.template].values()}
+        widget_dict = {signal.widget:signal for signal in list(self.map_dict[self.template].values())}
         for widget in self.widget_order:
             if widget in widget_dict:
                 signal = widget_dict[widget]
                 widget.setVisible(True)
                 widget.siblingLabel.setVisible(True)
                 widget.siblingLabel.setText(signal.text)
-                if isinstance(widget, QtGui.QPushButton):
+                if isinstance(widget, QtWidgets.QPushButton):
                     if signal.value == signal.ext[0]:
                         widget.setDown(False)
                     else:
@@ -1712,7 +1714,7 @@ class Win(QtGui.QMainWindow):
 
     def patch_parse(self, patch, event, template, out_ports):
         def Macro(*args):
-            print 'creating macro with values: {}'.format(args)
+            print('creating macro with values: {}'.format(args))
 #            return md.Call(localEvent, midi_event=md.event.SysExEvent(1, [240, 0, 0, 0, 0, 0]+[x for t in args for x in t]+[0xf7]))
             return md.Call(lambda event: self.internal_signal.emit(args))
         def Template(t):
@@ -1728,8 +1730,8 @@ class Win(QtGui.QMainWindow):
             patch = md_replace_pattern.sub(lambda m: md_replace[re.escape(m.group(0))], patch)
             return eval(patch)
         except Exception as err:
-            print err
-            print 'Patchh:\t'.format(patch)
+            print(err)
+            print('Patchh:\t'.format(patch))
             return md.Pass()
 
 
@@ -1737,7 +1739,8 @@ class Win(QtGui.QMainWindow):
         self.map_group.setVisible(False)
         self.template_manual_update_with_groups(True)
         enabled = [t.id for t in self.template_list if t.enabled]
-        [[md.engine.output_event(md.event.CtrlEvent(md.engine.out_ports()[-1], t+1, 0, 0)), 
+        print(self.template_list[enabled[0]])
+        [[md.engine.output_event(md.event.CtrlEvent(md.engine.out_ports()[-1], t+1, 0, 0)),
           md.engine.output_event(md.event.CtrlEvent(md.engine.out_ports()[-1], t+1, 0, 40))] for t in enabled]
         led_list = []
         for id, signal in enumerate(self.template_list[enabled[0]].widget_list):
@@ -1765,7 +1768,7 @@ class Win(QtGui.QMainWindow):
         widget = widget_data.widget
         ext = widget_data.ext
 #        mode = widget_data.mode
-        if not isinstance(widget, QtGui.QPushButton):
+        if not isinstance(widget, QtWidgets.QPushButton):
             widget.setValue(event.data2)
         else:
             if ext == True:
@@ -1784,7 +1787,7 @@ class Win(QtGui.QMainWindow):
             except:
                 continue
             event_chan, event_type, event_id = event
-            if not isinstance(widget, QtGui.QPushButton):
+            if not isinstance(widget, QtWidgets.QPushButton):
                 localEvent(midi_event=md.event.MidiEvent(event_type, 1, event_chan, event_id, value))
                 continue
             if isinstance(toggle, MyCycle):
@@ -1833,9 +1836,9 @@ class Win(QtGui.QMainWindow):
 
 
     def editor_start(self):
-        from editorwin import EditorWin, OutputWidget
+        from .editorwin import EditorWin, OutputWidget
         for groupbox in [self.dev_groupbox, self.track_groupbox, self.send_groupbox]:
-            rename_action = QtGui.QAction('Rename group', groupbox)
+            rename_action = QAction('Rename group', groupbox)
             rename_action.triggered.connect(self.group_rename)
             groupbox.addAction(rename_action)
         self.map_group.setVisible(False)
@@ -1858,13 +1861,13 @@ class Win(QtGui.QMainWindow):
             try:
                 with open(self.config, 'rb') as cf:
                     config_raw = eval(cf.read().replace('\n', ''))
-                    for k, v in config_raw.items():
+                    for k, v in list(config_raw.items()):
                         if k == 'output':
                             config_output = v
                             continue
                         btn = self.temp_id_group.button(k)
                         template_dict = config_raw[k]
-                        for w, x in template_dict.items():
+                        for w, x in list(template_dict.items()):
                             if w == 'id':
                                 self.template_list[k].name = x
                                 continue
@@ -1878,8 +1881,8 @@ class Win(QtGui.QMainWindow):
                         else:
                             btn.state = False
             except Exception as e:
-                print 'PD!'
-                print e
+                print('PD!')
+                print(e)
 
         if self.map_file:
             mapping_raw = ''
@@ -1892,14 +1895,14 @@ class Win(QtGui.QMainWindow):
                     with open(self.map_file, 'r') as cf:
                         mapping_raw = cf.read().replace('\n', '')
                 except:
-                    print 'Default mapping not found!'
+                    print('Default mapping not found!')
             mapping_raw = mapping_raw.replace('CTRL', 'md.CTRL')
             mapping_raw = mapping_raw.replace('NOTE', 'md.NOTE')
             try:
-                for k, v in eval(mapping_raw).items():
-                    self.map_dict[k] = {getattr(self, '{}'.format(widget)): event + (ext, mode) for event, (widget, ext, mode) in v.items()}
+                for k, v in list(eval(mapping_raw).items()):
+                    self.map_dict[k] = {getattr(self, '{}'.format(widget)): event + (ext, mode) for event, (widget, ext, mode) in list(v.items())}
             except Exception as e:
-                print e
+                print(e)
 
 
         self.template_simple_update(startup=True)
@@ -1908,12 +1911,12 @@ class Win(QtGui.QMainWindow):
         self.output_widget.setGeometry(self.map_group.geometry())
 #        self.output_widget.move(570, 420)
         self.output_listview = self.output_widget.output_list
-        output_action = QtGui.QAction('Edit', self.output_listview)
+        output_action = QAction('Edit', self.output_listview)
         output_action.triggered.connect(self.output_port_edit)
         self.output_listview.addAction(output_action)
         self.output_model = QtGui.QStandardItemModel(self.output_listview)
         self.output_listview.closeEditor = self.validate_output
-        self.output_widget.button_box.button(QtGui.QDialogButtonBox.Save).clicked.connect(self.config_save)
+        self.output_widget.button_box.button(QtWidgets.QDialogButtonBox.Save).clicked.connect(self.config_save)
 
         self.output_listview.setModel(self.output_model)
 #        config_output = self.map_dict.get('output')
@@ -1943,23 +1946,23 @@ class Win(QtGui.QMainWindow):
         self.output_widget.down_btn.clicked.connect(self.output_move)
         self.output_widget.show_tooltip_chk.toggled.connect(self.show_overlay)
 
-        
+
         self.editor_win = EditorWin(self)
         self.editor_win.labelChanged.connect(self.label_update)
         self.editor_win.widgetSaved.connect(self.editor_template_check)
         self.editor_win.show()
         for widget in self.widget_order:
             widget.customContextMenuRequested.connect(self.editor_widget_menu)
-            if not isinstance(widget, QtGui.QPushButton):
+            if not isinstance(widget, QtWidgets.QPushButton):
                 widget.siblingLabel.customContextMenuRequested.connect(self.editor_widget_menu)
 
         app = QtCore.QCoreApplication.instance()
         app.installEventFilter(self)
-        self.ignored_events = [QtCore.QEvent.MouseButtonPress, 
-                               QtCore.QEvent.MouseMove, 
-                               QtCore.QEvent.Wheel, 
-                               QtCore.QEvent.KeyPress, 
-                               QtCore.QEvent.KeyRelease, 
+        self.ignored_events = [QtCore.QEvent.MouseButtonPress,
+                               QtCore.QEvent.MouseMove,
+                               QtCore.QEvent.Wheel,
+                               QtCore.QEvent.KeyPress,
+                               QtCore.QEvent.KeyRelease,
                               ]
         self.eventFilter = self.editor_eventFilter
         self.rubber = None
@@ -1975,7 +1978,7 @@ class Win(QtGui.QMainWindow):
 
     def show_overlay(self, value):
         if value:
-            for widget, dict in self.conf_dict[self.template].items():
+            for widget, dict in list(self.conf_dict[self.template].items()):
                 if dict is not None:
                     dest = dict.get('dest')
                     siblingLed = widget.siblingLed
@@ -2001,7 +2004,7 @@ class Win(QtGui.QMainWindow):
             if name not in namelist:
                 break
             count += 1
-            
+
         output.setText(name)
         output.port = None
         self.output_model.appendRow(output)
@@ -2065,17 +2068,17 @@ class Win(QtGui.QMainWindow):
         index = self.output_listview.currentIndex().row()
         item = self.output_model.item(index, 0)
         label_text = 'Enter the port name(s) "{}" will try to connect to.\n\nYou may use regular expressions, for example:\n"LinuxSampler:.*"'.format(item.text())
-        input_dialog = QtGui.QDialog()
+        input_dialog = QtWidgets.QDialog()
         layout = QtGui.QVBoxLayout(input_dialog)
         input_dialog.setWindowTitle('Set destination port(s)')
         input_dialog.setModal(True)
-        input_label = QtGui.QLabel(label_text, input_dialog)
+        input_label = QtWidgets.QLabel(label_text, input_dialog)
         input_edit = QtGui.QLineEdit(item.port)
-        input_buttonbox = QtGui.QDialogButtonBox(input_dialog)
-        input_buttonbox.setStandardButtons(QtGui.QDialogButtonBox.Reset|QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
-        input_buttonbox.button(QtGui.QDialogButtonBox.Ok).clicked.connect(input_dialog.accept)
-        input_buttonbox.button(QtGui.QDialogButtonBox.Cancel).clicked.connect(input_dialog.reject)
-        input_buttonbox.button(QtGui.QDialogButtonBox.Reset).clicked.connect(reset)
+        input_buttonbox = QtWidgets.QDialogButtonBox(input_dialog)
+        input_buttonbox.setStandardButtons(QtWidgets.QDialogButtonBox.Reset|QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel)
+        input_buttonbox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(input_dialog.accept)
+        input_buttonbox.button(QtWidgets.QDialogButtonBox.Cancel).clicked.connect(input_dialog.reject)
+        input_buttonbox.button(QtWidgets.QDialogButtonBox.Reset).clicked.connect(reset)
         layout.addWidget(input_label)
         layout.addWidget(input_edit)
         layout.addWidget(input_buttonbox)
@@ -2141,7 +2144,7 @@ class Win(QtGui.QMainWindow):
             self.create_group((selection[0].grid_col, selection[0].grid_row, selection[-1].grid_col, selection[-1].grid_row), True)
         else:
             out_ports = [self.output_model.item(i).text() for i in range(self.output_model.rowCount())]
-            port, res = QtGui.QInputDialog.getItem(self, 'Set port for multiple widgets', 'Select the default destination port for the selected widgets:', out_ports, 0, False)
+            port, res = QtWidgets.QInputDialog.getItem(self, 'Set port for multiple widgets', 'Select the default destination port for the selected widgets:', out_ports, 0, False)
             if res:
                 dest = out_ports.index(port)
                 for widget in selection:
@@ -2160,24 +2163,24 @@ class Win(QtGui.QMainWindow):
     def create_group(self, rect, interactive=False, name='Group', rgba=None, show=True):
         groupbox = QtGui.QGroupBox(name, self.centralWidget())
         groupbox.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
-        rename_action = QtGui.QAction('Rename group', groupbox)
+        rename_action = QAction('Rename group', groupbox)
         rename_action.triggered.connect(self.group_rename)
         groupbox.addAction(rename_action)
-        color_action = QtGui.QAction('Set background color', groupbox)
+        color_action = QAction('Set background color', groupbox)
         color_action.triggered.connect(self.group_color_set)
         groupbox.addAction(color_action)
-        raise_action = QtGui.QAction('Raise group', groupbox)
+        raise_action = QAction('Raise group', groupbox)
         raise_action.triggered.connect(self.group_raise)
         groupbox.addAction(raise_action)
-        lower_action = QtGui.QAction('Lower group', groupbox)
+        lower_action = QAction('Lower group', groupbox)
         lower_action.triggered.connect(self.group_lower)
         groupbox.addAction(lower_action)
-        delete_action = QtGui.QAction('Delete group', groupbox)
+        delete_action = QAction('Delete group', groupbox)
         delete_action.triggered.connect(self.group_delete)
         groupbox.addAction(delete_action)
 #        group_menu.addAction(rename_action)
 #        group_menu.addAction(color_action)
-        
+
         groupbox.extents = rect
         x, y, w, h = rect
         width = w-x+1
@@ -2208,7 +2211,7 @@ class Win(QtGui.QMainWindow):
             groupbox.colors = None
         if not interactive:
             return groupbox
-        label, res = QtGui.QInputDialog.getText(self, 'Group name', 'Enter name for this group', QtGui.QLineEdit.Normal, name)
+        label, res = QtWidgets.QInputDialog.getText(self, 'Group name', 'Enter name for this group', QtGui.QLineEdit.Normal, name)
         if res:
             groupbox.setTitle(label)
             self.template_groups[self.template].append(groupbox)
@@ -2217,7 +2220,7 @@ class Win(QtGui.QMainWindow):
 
     def group_rename(self):
         groupbox = self.sender().parent()
-        label, res = QtGui.QInputDialog.getText(self, 'Group name', 'Enter name for this group', QtGui.QLineEdit.Normal, groupbox.title())
+        label, res = QtWidgets.QInputDialog.getText(self, 'Group name', 'Enter name for this group', QtGui.QLineEdit.Normal, groupbox.title())
         if res:
             groupbox.setTitle(label)
 
@@ -2225,7 +2228,7 @@ class Win(QtGui.QMainWindow):
         groupbox = self.sender().parent()
         self.template_groups[self.template].pop(self.template_groups[self.template].index(groupbox))
         groupbox.deleteLater()
-        print self.template_groups[self.template]
+        print(self.template_groups[self.template])
 
     def group_color_set(self):
         groupbox = self.sender().parent()
@@ -2288,9 +2291,9 @@ class Win(QtGui.QMainWindow):
                 self.output_widget.show_tooltip_chk.setChecked(False)
                 if event.button() == QtCore.Qt.RightButton:
 #                    print 'menu'
-                    return QtGui.QMainWindow.eventFilter(self, source, event)
+                    return QtWidgets.QMainWindow.eventFilter(self, source, event)
 #                print 'set widget {}'.format(source.readable)
-                if isinstance(source, QtGui.QLabel):
+                if isinstance(source, QtWidgets.QLabel):
                     self.widgetChanged.emit(source.siblingWidget)
                     self.editor_win.text_edit.setFocus()
                     self.editor_win.text_edit.selectAll()
@@ -2305,7 +2308,7 @@ class Win(QtGui.QMainWindow):
                 return True
         if source == self.template_lbl and event.type() == QtCore.QEvent.MouseButtonDblClick and event.button() == QtCore.Qt.LeftButton:
             self.template_rename_dialog(True)
-        return QtGui.QMainWindow.eventFilter(self, source, event)
+        return QtWidgets.QMainWindow.eventFilter(self, source, event)
 
     def template_simple_update(self, toggle=None, startup=False):
         if toggle == False:
@@ -2420,7 +2423,7 @@ class Win(QtGui.QMainWindow):
 
             led_action = widget_dict.get('led_action', Pass)
             if led_action == Pass:
-                if isinstance(widget, QtGui.QPushButton):
+                if isinstance(widget, QtWidgets.QPushButton):
                     if led_id < 40 or led_id >= 44:
                         led_extent += '<span style="background-color: #f00">&nbsp;&nbsp;&nbsp;</span>'
                     else:
@@ -2458,21 +2461,21 @@ class Win(QtGui.QMainWindow):
 
     def editor_widget_menu(self, pos):
         sender_widget = self.sender()
-        if isinstance(sender_widget, QtGui.QLabel):
+        if isinstance(sender_widget, QtWidgets.QLabel):
             widget = sender_widget.siblingWidget
         else:
             widget = sender_widget
         widget_dict = self.conf_dict[self.template].get(widget)
         menu = QtGui.QMenu(self)
-        edit_action = QtGui.QAction('Edit controller', widget)
+        edit_action = QAction('Edit controller', widget)
         edit_action.triggered.connect(self.editor_widget_edit)
         menu.addAction(edit_action)
-        clear_action = QtGui.QAction('Clear controller', widget)
+        clear_action = QAction('Clear controller', widget)
         clear_action.triggered.connect(self.editor_widget_clear)
         menu.addAction(clear_action)
         menu.addSeparator()
-        copy_action = QtGui.QAction('Copy controller', widget)
-        cut_action = QtGui.QAction('Cut controller', widget)
+        copy_action = QAction('Copy controller', widget)
+        cut_action = QAction('Cut controller', widget)
         copy_action.triggered.connect(lambda: self.editor_widget_copy(widget))
         cut_action.triggered.connect(lambda: self.editor_widget_cut(widget))
         if self.widget_clipboard:
@@ -2480,9 +2483,9 @@ class Win(QtGui.QMainWindow):
                 diff_template = ' from template {}'.format(self.template_list[self.widget_clipboard.template])
             else:
                 diff_template = ''
-            paste_action = QtGui.QAction('Paste {} here{}'.format(self.widget_clipboard.widget.readable, diff_template), widget)
+            paste_action = QAction('Paste {} here{}'.format(self.widget_clipboard.widget.readable, diff_template), widget)
             paste_action.triggered.connect(lambda: self.editor_widget_paste(widget))
-            swap_action = QtGui.QAction('Swap with {}{}'.format(self.widget_clipboard.widget.readable, diff_template), widget)
+            swap_action = QAction('Swap with {}{}'.format(self.widget_clipboard.widget.readable, diff_template), widget)
             swap_action.triggered.connect(lambda: self.editor_widget_swap(widget))
             if (widget, self.template) == (self.widget_clipboard):
                 paste_action.setEnabled(False)
@@ -2492,9 +2495,9 @@ class Win(QtGui.QMainWindow):
                 else:
                     copy_action.setEnabled(False)
         else:
-            paste_action = QtGui.QAction('Paste controller', widget)
+            paste_action = QAction('Paste controller', widget)
             paste_action.setEnabled(False)
-            swap_action = QtGui.QAction('Swap controller', widget)
+            swap_action = QAction('Swap controller', widget)
             swap_action.setEnabled(False)
         menu.addActions([copy_action, cut_action, paste_action, swap_action])
         if widget_dict is None:
@@ -2503,7 +2506,7 @@ class Win(QtGui.QMainWindow):
 
     def editor_widget_clear(self, *args):
         sender_widget = self.sender().parent()
-        if isinstance(sender_widget, QtGui.QLabel):
+        if isinstance(sender_widget, QtWidgets.QLabel):
             sender_widget = sender_widget.siblingWidget
         self.conf_dict[self.template][sender_widget] = {'enabled': False}
         sender_widget.siblingLabel.setText('')
@@ -2548,10 +2551,10 @@ class Win(QtGui.QMainWindow):
     def editor_widget_paste(self, dest_widget):
         source_widget, source_template = self.widget_clipboard
         if self.conf_dict[self.template][dest_widget]:
-            res = QtGui.QMessageBox.question(self, 'Overwrite controller?', 
-                '''Controller <b>{}</b> is already set; overwrite it with data from <b>{}</b>?'''.format(dest_widget.readable, source_widget.readable), 
-                buttons=QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-            if res != QtGui.QMessageBox.Yes:
+            res = QtWidgets.QMessageBox.question(self, 'Overwrite controller?',
+                '''Controller <b>{}</b> is already set; overwrite it with data from <b>{}</b>?'''.format(dest_widget.readable, source_widget.readable),
+                buttons=QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+            if res != QtWidgets.QMessageBox.Yes:
                 return
         self.conf_dict[self.template][dest_widget] = copy(self.conf_dict[source_template][source_widget])
         try:
@@ -2569,10 +2572,10 @@ class Win(QtGui.QMainWindow):
 
     def editor_widget_swap(self, dest_widget):
         source_widget, source_template = self.widget_clipboard
-        res = QtGui.QMessageBox.question(self, 'Swap controllers?', 
-            '''Swap controller <b>{}</b> with <b>{}</b>?'''.format(dest_widget.readable, source_widget.readable), 
-            buttons=QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-        if res != QtGui.QMessageBox.Yes:
+        res = QtWidgets.QMessageBox.question(self, 'Swap controllers?',
+            '''Swap controller <b>{}</b> with <b>{}</b>?'''.format(dest_widget.readable, source_widget.readable),
+            buttons=QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        if res != QtWidgets.QMessageBox.Yes:
             return
         source_dict = copy(self.conf_dict[source_template][source_widget])
         dest_dict = copy(self.conf_dict[self.template][dest_widget])
@@ -2586,7 +2589,7 @@ class Win(QtGui.QMainWindow):
                 source_label = source_dict.get('patch')
             if not source_label:
                 source_label = '(set)'
-                
+
         dest_widget.siblingLabel.setText(source_label)
         self.conf_dict[self.template][dest_widget] = source_dict
         self.conf_dict[source_template][source_widget] = dest_dict
@@ -2671,7 +2674,7 @@ class Win(QtGui.QMainWindow):
                 else:
                     continue
                 if widget_data is not None and widget_data.get('enabled', True):
-                    for k, v in widget_data.items():
+                    for k, v in list(widget_data.items()):
                         if k == 'widget':
                             widget_data.pop('widget')
                         elif k == 'enabled':
@@ -2718,10 +2721,10 @@ class Win(QtGui.QMainWindow):
             if len(conf_dict[template]) == 0:
                 conf_dict.pop(template)
         dict_str = '{\n'
-        for main_k, main_v in conf_dict.items():
+        for main_k, main_v in list(conf_dict.items()):
             if isinstance(main_v, OrderedDict):
                 dict_str += '{}: {{\n'.format(main_k)
-                for k, v in main_v.items():
+                for k, v in list(main_v.items()):
                     if isinstance(v, str):
                         dict_str += '\'{}\': \'{}\',\n'.format(str(k), str(v))
                     else:
@@ -2741,12 +2744,12 @@ class Win(QtGui.QMainWindow):
     def closeEvent(self, event):
         if self.unsaved:
             filetype = 'mapping' if self.mode==MapMode else 'configuration'
-            res = QtGui.QMessageBox.question(self, '{} not saved'.format(filetype.title()), 'Current {} has been modified, close anyway?'.format(filetype), 
-                buttons=QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel | QtGui.QMessageBox.Save)
-            if res == QtGui.QMessageBox.Cancel:
+            res = QtWidgets.QMessageBox.question(self, '{} not saved'.format(filetype.title()), 'Current {} has been modified, close anyway?'.format(filetype),
+                buttons=QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Save)
+            if res == QtWidgets.QMessageBox.Cancel:
                 event.ignore()
                 return
-            elif res == QtGui.QMessageBox.Save:
+            elif res == QtWidgets.QMessageBox.Save:
                 if self.mode == MapMode:
                     newres = self.map_save()
                 else:
@@ -2763,13 +2766,13 @@ class Win(QtGui.QMainWindow):
             self.router_thread.quit()
             self.router_thread.wait()
 #        self.deleteLater()
-        QtGui.QMainWindow.closeEvent(self, event)
+        QtWidgets.QMainWindow.closeEvent(self, event)
 
 
 def main():
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     args = process_args()
-    QtCore.qInstallMsgHandler(MsgHandler)
+    QtCore.qInstallMessageHandler(messageHandler)
     win = Win(mode=args.mode, map_file=args.mapfile, config=args.config, backend=args.backend)
     win.start(args.simple)
 #    win.show()
@@ -2778,4 +2781,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

@@ -1,6 +1,6 @@
 import re
 from math import pow, log, log10
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui
 #from const import str_allowed, dev_scale, dir_scale, md_replace, md_replace_pattern
 from const import *
 import mididings as md
@@ -8,8 +8,21 @@ from _mididings import Engine as mdEngineClass
 from mididings import engine as mdEngine
 from mididings.extra.osc import SendOSC
 
-def MsgHandler(level, msg):
-    print msg
+def messageHandler(mode, context, message):
+    if mode == QtCore.QtInfoMsg:
+        mode = 'INFO'
+    elif mode == QtCore.QtWarningMsg:
+        mode = 'WARNING'
+    elif mode == QtCore.QtCriticalMsg:
+        mode = 'CRITICAL'
+    elif mode == QtCore.QtFatalMsg:
+        mode = 'FATAL'
+    else:
+        mode = 'DEBUG'
+    print('qt_message_handler: line: %d, func: %s(), file: %s' % (
+          context.line, context.function, context.file))
+    print('  %s: %s\n' % (mode, message))
+
 
 def str_check(text):
     if isinstance(text, QtCore.QString):
@@ -171,14 +184,3 @@ def findIndex(model, value, role=UserRole):
             if item.data(role).toPyObject() == value:
                 return model.indexFromItem(item)
     return None
-
-
-
-
-
-
-
-
-
-
-

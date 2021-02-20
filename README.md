@@ -26,9 +26,9 @@ same, so it's enough to know how the controls and leds are mapped.
 - Graphically group mapped controllers to easily recognize them;
 
 ## Requirements
-- Python 2.7
-- PyQt4 at least version 4.11.1
-- [mididings](http://das.nasophon.de/mididings/)
+- Python 3.7 and later
+- PyQt5 5.13.2 and later
+- [mididings](http://das.nasophon.de/mididings/) patched with: https://github.com/dsacre/mididings/pull/24
 - Jack Audio Connection Kit (optional [not supported yet])
 
 ## Usage

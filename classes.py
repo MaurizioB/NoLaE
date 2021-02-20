@@ -1,5 +1,5 @@
 import mididings as md
-from PyQt4 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtWidgets, uic
 from const import *
 from utils import *
 from copy import copy
@@ -11,8 +11,8 @@ class MyCycle(int, object):
     def __init__(self, values):
         self.values = values
         self.cycle = cycle(values)
-        self._index_cycle = cycle(range(1, len(values))+[0])
-        self.current = self.cycle.next()
+        self._index_cycle = cycle(list(range(1, len(values)))+[0])
+        self.current = next(self.cycle)
         self._index = 0
     @property
     def index(self):
@@ -31,14 +31,14 @@ class MyCycle(int, object):
         return self.current
     def __radd__(self, other):
         return other+self.current
-    def next(self):
-        self.current = self.cycle.next()
-        self._index = self._index_cycle.next()
+    def __next__(self):
+        self.current = next(self.cycle)
+        self._index = next(self._index_cycle)
         return self.current
     def reset(self):
         self.cycle = cycle(self.values)
-        self._index_cycle = cycle(range(1, len(values))+[0])
-        self.current = self.cycle.next()
+        self._index_cycle = cycle(list(range(1, len(values)))+[0])
+        self.current = next(self.cycle)
         self._index = 0
         return self.current
     def index_prepare(self, index):
@@ -47,8 +47,8 @@ class MyCycle(int, object):
         else:
             prev = index-1
         while self._index != prev:
-            self.current = self.cycle.next()
-            self._index = self._index_cycle.next()
+            self.current = next(self.cycle)
+            self._index = next(self._index_cycle)
     def reset_prepare(self):
         self.index_prepare(0)
     def value_prepare(self, value):
@@ -91,7 +91,7 @@ class SignalClass(object):
 #                elif isinstance(self.range_mode, MyCycle):
 #                    print 'staminchia: {}'.format(self.range_mode.values)
 #                else:
-                    self.text_values = range(128)
+                    self.text_values = list(range(128))
             self.text = self.basetext.format(self.text_values[0])
             self.trigger = self.interactive_trigger
         if led is True:
@@ -104,7 +104,7 @@ class SignalClass(object):
         else:
             self.led = led
             widget.siblingLed = led
-        
+
         if self.led is not None:
             self.led_setup(led_basevalue, led_scale if isinstance(led_scale, int) else 0)
         else:
@@ -167,7 +167,7 @@ class SignalClass(object):
             self.led_action = self.led_ignore_action
             return
         if action == Pass:
-            if isinstance(self.widget, QtGui.QPushButton):
+            if isinstance(self.widget, QtWidgets.QPushButton):
                 self.led_action = self.led_push_action
             else:
                 self.led_action = self.led_pass_action
@@ -182,7 +182,7 @@ class SignalClass(object):
             self.led_action = self.led_toggle_action
         elif isinstance(action, int):
             self.led_triggervalue = action
-            if isinstance(self.widget, QtGui.QPushButton):
+            if isinstance(self.widget, QtWidgets.QPushButton):
                 self.led_action = self.led_push_action
             else:
                 self.led_action = self.led_pass_action
@@ -258,10 +258,10 @@ class Router(QtCore.QObject):
             backend = self.backend,
             client_name='NoLaE',
             in_ports = [
-                ('LC_input', 'Launch.*'), 
+                ('LC_input', 'Launch.*'),
                         ],
             out_ports=[
-                ('LC_output', 'Launch.*'), 
+                ('LC_output', 'Launch.*'),
                         ],
             )
         self.already_set = True
@@ -278,7 +278,7 @@ class Router(QtCore.QObject):
             backend = self.backend,
             client_name='NoLaE',
             in_ports = [
-                ('LC_input', 'Launch.*'), 
+                ('LC_input', 'Launch.*'),
                         ],
             out_ports = self.out_ports + [('LC_output', 'Launch.*')],
             )
@@ -321,11 +321,11 @@ class Router(QtCore.QObject):
                 pass
 #        QtCore.QThread.quit(self)
 
-class MyToolTip(QtGui.QWidget):
+class MyToolTip(QtWidgets.QWidget):
     def __init__(self, parent, text):
-        QtGui.QWidget.__init__(self, parent.parent())
+        QtWidgets.QWidget.__init__(self, parent.parent())
 #        self.resize(50, 100)
-        self.label = QtGui.QLabel(text, self)
+        self.label = QtWidgets.QLabel(text, self)
         self.label.setMinimumWidth(60)
         self.label.setMaximumWidth(60)
         self.label.setMinimumHeight(40)
@@ -338,9 +338,9 @@ class MyToolTip(QtGui.QWidget):
         self.setStyleSheet('background-color: rgba(210,210,210,210); border: 1px solid gray;')
         self.raise_()
 
-class PianoKey(QtGui.QWidget):
+class PianoKey(QtWidgets.QWidget):
     def __init__(self, parent, id):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.id = id
         self.name = md.util.note_name(id)
         self.black = True if self.name[1]=='#' else False
@@ -398,9 +398,9 @@ class PianoKey(QtGui.QWidget):
         self.current_color = self.color
         self.update()
 
-class Piano(QtGui.QDialog):
+class Piano(QtWidgets.QDialog):
     def __init__(self, parent):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self.setWindowTitle('Note selector')
         self.keys = []
         self.highlight = None
@@ -424,11 +424,11 @@ class Piano(QtGui.QDialog):
             key.update()
         else:
             self.highlight = None
-        return QtGui.QDialog.exec_(self)
+        return QtWidgets.QDialog.exec_(self)
 
-class NoLedWidget(QtGui.QWidget):
+class NoLedWidget(QtWidgets.QWidget):
     def __init__(self, parent):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.color = QtGui.QColor(220, 220, 220)
 
     def paintEvent(self, event):
@@ -443,9 +443,9 @@ class NoLedWidget(QtGui.QWidget):
         qp.drawRect(2, 2, self.width(), self.height())
 
 
-class LedWidget(QtGui.QWidget):
+class LedWidget(QtWidgets.QWidget):
     def __init__(self, parent, id):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.id = id
         self.setMinimumSize(10, 10)
         self.setMaximumSize(10, 10)
@@ -476,11 +476,11 @@ class LedWidget(QtGui.QWidget):
         self.update()
 
 
-class LedGrid(QtGui.QDialog):
+class LedGrid(QtWidgets.QDialog):
     def __init__(self, parent):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self.setWindowTitle('LED selector')
-        self.grid = QtGui.QGridLayout()
+        self.grid = QtWidgets.QGridLayout()
         self.setLayout(self.grid)
         self.highlight = None
         self.led_list = []
@@ -488,7 +488,7 @@ class LedGrid(QtGui.QDialog):
             led = LedWidget(self, i)
             self.grid.addWidget(led, i/8, divmod(i, 8)[1])
             self.led_list.append(led)
-        spacer = QtGui.QWidget()
+        spacer = QtWidgets.QWidget()
         spacer.setMinimumWidth(8)
         self.grid.addWidget(spacer, 0, 8)
         for i in range(16):
@@ -521,12 +521,12 @@ class LedGrid(QtGui.QDialog):
             led.update()
         else:
             self.highlight = None
-        return QtGui.QDialog.exec_(self)
+        return QtWidgets.QDialog.exec_(self)
 
 
-class SysExDialog(QtGui.QInputDialog):
+class SysExDialog(QtWidgets.QInputDialog):
     def __init__(self, parent):
-        QtGui.QInputDialog.__init__(self, parent)
+        QtWidgets.QInputDialog.__init__(self, parent)
         self.setWindowTitle('Input SysEx')
         self.setLabelText('Enter the full SysEx string:')
 
@@ -534,10 +534,10 @@ class SysExDialog(QtGui.QInputDialog):
         if event.type() == QtCore.QEvent.WindowActivate:
             if not len(self.textValue()):
                 self.get_clipboard()
-        return QtGui.QInputDialog.event(self, event)
+        return QtWidgets.QInputDialog.event(self, event)
 
     def get_clipboard(self):
-        cb = QtGui.QApplication.clipboard()
+        cb = QtWidgets.QApplicationlication.clipboard()
         sysex = str(cb.text())
         if len(sysex):
             try:
@@ -568,7 +568,7 @@ class SysExDialog(QtGui.QInputDialog):
             self.get_clipboard()
         else:
             self.setTextValue(sysex)
-        res = QtGui.QInputDialog.exec_(self)
+        res = QtWidgets.QInputDialog.exec_(self)
         if not res:
             return False
         try:
@@ -580,23 +580,23 @@ class SysExDialog(QtGui.QInputDialog):
             return False
 
 
-class ToggleScale(QtGui.QDialog):
+class ToggleScale(QtWidgets.QDialog):
     def __init__(self, parent, scale_model):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         uic.loadUi('toggle_scale_reset.ui', self)
         self.scale_combo.setModel(scale_model)
         self.setFixedSize(self.width(), self.height())
 
     def exec_(self):
-        res = QtGui.QDialog.exec_(self)
+        res = QtWidgets.QDialog.exec_(self)
         if not res:
             return
         else:
             return self.scale_combo.currentIndex(), self.mode_combo.currentIndex()
 
-class ToggleColors(QtGui.QDialog):
+class ToggleColors(QtWidgets.QDialog):
     def __init__(self, parent, led_type=FullColors):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         uic.loadUi('toggle_color_dialog.ui', self)
         self.main = parent
         self.led_type = led_type
@@ -840,7 +840,7 @@ class ToggleColors(QtGui.QDialog):
     def toggle_flash(self):
         model = self.toggle_listview.model()
         if model is None or model.rowCount() <= 0: return
-        led_role = self.toggle_timer_status.next()
+        led_role = next(self.toggle_timer_status)
         for i in range(model.rowCount()):
             item = model.item(i)
             pixmap = item.data(led_role).toPyObject()
@@ -848,9 +848,6 @@ class ToggleColors(QtGui.QDialog):
                 item.setData(pixmap, QtCore.Qt.DecorationRole)
 
     def exec_(self):
-        res = QtGui.QDialog.exec_(self)
+        res = QtWidgets.QDialog.exec_(self)
         if not res: return None
         return self.toggle_model, self.led_scale
-
-
-
